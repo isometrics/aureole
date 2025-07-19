@@ -43,8 +43,18 @@ export default function Home() {
     setInputMessage('');
     setIsLoading(true);
 
+    // Create assistant message placeholder
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      text: '',
+      sender: 'assistant',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+
     try {
-      // Call our API route
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -53,33 +63,61 @@ export default function Home() {
         body: JSON.stringify({ message: inputMessage }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response');
+        throw new Error('Failed to get response');
       }
 
-      // Add assistant response to chat
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.reply,
-        sender: 'assistant',
-        timestamp: new Date(),
-      };
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
 
-      setMessages(prev => [...prev, assistantMessage]);
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            
+            if (data === '[DONE]') {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, text: msg.text + parsed.content }
+                      : msg
+                  )
+                );
+              }
+            } catch (e) {
+              // Ignore parsing errors
+            }
+          }
+        }
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
       
-      // Add error message to chat
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'Sorry, I encountered an error. Please check that your OpenAI API key is configured correctly.',
-        sender: 'assistant',
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, text: 'Sorry, I encountered an error. Please check that your OpenAI API key is configured correctly.' }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
