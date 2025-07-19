@@ -6,14 +6,14 @@ interface MessageProps {
 
 export default function Message({ message }: MessageProps) {
   return (
-    <div className={`${message.sender === 'user' ? 'flex justify-end' : ''}`}>
-      {message.sender === 'user' ? (
+    <div className={`${message.role === 'user' ? 'flex justify-end' : ''}`}>
+      {message.role === 'user' ? (
         <div className="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl bg-blue-600 text-white">
-          <p className="text-base leading-relaxed font-medium">{message.text}</p>
+          <p className="text-base leading-relaxed font-medium">{message.content}</p>
         </div>
       ) : (
         <div className="w-full text-gray-100">
-          <p className="text-base leading-relaxed font-normal">{message.text}</p>
+          <p className="text-base leading-relaxed font-normal">{message.content}</p>
         </div>
       )}
     </div>

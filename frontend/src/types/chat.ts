@@ -1,6 +1,7 @@
+// AI SDK compatible message type
 export type Message = {
   id: string;
-  text: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
+  role: 'user' | 'assistant' | 'system' | 'data';
+  content: string;
+  createdAt?: Date;
 }; 

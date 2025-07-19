@@ -1,13 +1,13 @@
 interface MessageInputProps {
   inputMessage: string;
-  setInputMessage: (message: string) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
 }
 
 export default function MessageInput({ 
   inputMessage, 
-  setInputMessage, 
+  handleInputChange,
   isLoading, 
   onSubmit 
 }: MessageInputProps) {
@@ -18,7 +18,7 @@ export default function MessageInput({
           <input
             type="text"
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             disabled={isLoading}
             className="flex-1 bg-gray-800 border border-gray-700 rounded-full px-4 py-3 text-base text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-700"
