@@ -21,12 +21,13 @@ export default function ToggleCircle({ onToggle }: ToggleCircleProps) {
       onClick={handleCircleClick}
     >
       <svg 
-        className={`w-3 h-3 text-white transition-transform duration-200 ${isRotated ? 'rotate-180' : ''}`}
+        className={`w-3 h-3 transition-transform duration-200 ${isRotated ? 'rotate-180' : ''}`}
         fill="none" 
-        stroke="white" 
+        stroke="#FFFFFF" 
+        strokeWidth="2.5"
         viewBox="0 0 24 24"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
       </svg>
     </div>
   );
