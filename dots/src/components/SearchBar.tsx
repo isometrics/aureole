@@ -40,6 +40,25 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   // Error state for API failures
   const [error, setError] = useState<string | null>(null);
 
+  // Handle clicking outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      // Check if click is outside the search container and dropdown
+      if (!target.closest('.search-container') && !target.closest('.dropdown-menu')) {
+        setIsPopupOpen(false);
+      }
+    };
+
+    if (isPopupOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPopupOpen]);
+
   /**
    * Handles input click - fetches data on first click if not already loaded
    * Opens the dropdown menu for tag selection
@@ -125,7 +144,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   }
 
   return (
-    <div className="relative p-6">
+    <div className="relative p-6 search-container">
       {/* Main search container with dynamic height based on selected tags */}
       <div 
         className={`w-full bg-[#1D1D1D] rounded-[20px] border border-[#404040] focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200 hover:border-[#505050] focus-within:border-blue-500 cursor-pointer ${

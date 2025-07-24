@@ -22,7 +22,7 @@ export default function DropdownMenu({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-full left-6 right-6 -mt-3 bg-[#292929] rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden">
+    <div className="absolute top-full left-6 right-6 -mt-3 bg-[#292929] rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden dropdown-menu">
       {/* Search Results Container */}
       <div className="max-h-80 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#404040] scrollbar-track-transparent">
         {loading && (
