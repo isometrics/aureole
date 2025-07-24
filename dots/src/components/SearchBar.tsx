@@ -71,7 +71,7 @@ export default function SearchBar() {
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                   tag.type === 'repo' ? 'bg-green-500' : 'bg-blue-500'
                 }`}></div>
-                <span className="truncate max-w-32">{tag.original_label}</span>
+                <span className="truncate max-w-48">{tag.original_label}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
