@@ -21,7 +21,15 @@ export default function Home() {
       {/* Topbar */}
       <div className="h-[60px] bg-[#242424] flex items-center px-6 flex-shrink-0">
         <div className="w-[30px]"></div>
-        <Image src="/logo.svg" alt="8Knot Logo" width={72} height={24} />
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-purple-500" style={{ animation: 'pulse 2s ease-in-out 3 forwards' }}></div>
+            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-400 to-red-500" style={{ animation: 'pulse 2s ease-in-out 3 0.5s forwards' }}></div>
+          </div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent" style={{ animation: 'pulse 2s ease-in-out 3 forwards' }}>
+            DOTS
+          </h1>
+        </div>
       </div>
       
       {/* Main content area */}
