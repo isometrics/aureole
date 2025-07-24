@@ -26,14 +26,14 @@ export default function DropdownMenu({
       {/* Search Results Container */}
       <div className="max-h-80 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#404040] scrollbar-track-transparent">
         {loading && (
-          <div className="flex items-center justify-center p-6">
+          <div className="flex items-center justify-center p-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             <span className="ml-3 text-gray-400 text-[14px] font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>Loading repositories...</span>
           </div>
         )}
         
         {error && (
-          <div className="p-4 text-center text-red-400 text-[14px] font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>
+          <div className="p-3 text-center text-red-400 text-[14px] font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>
             <div className="flex items-center justify-center">
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -44,8 +44,8 @@ export default function DropdownMenu({
         )}
         
         {data && !loading && !error && (
-          <div className="py-3">
-            <div className="px-6 py-2">
+          <div className="py-2">
+            <div className="px-4 py-1">
               <span className="font-inter text-[12px]" style={{ fontWeight: 600, fontStyle: 'normal', color: '#9C9C9C' }}>
                 Repositories
               </span>
@@ -53,7 +53,7 @@ export default function DropdownMenu({
             {data.all_items.map((item: CombinedItem, index: number) => (
               <div
                 key={`${item.type}-${item.value}-${index}`}
-                className={`px-6 py-3 hover:bg-[#292929] cursor-pointer text-white text-[14px] transition-colors duration-150 ease-in-out border-l-2 font-inter ${
+                className={`px-4 py-2 hover:bg-[#292929] cursor-pointer text-white text-[14px] transition-colors duration-150 ease-in-out border-l-2 font-inter ${
                   selectedTags.some(tag => tag.type === item.type && tag.value === item.value)
                     ? 'bg-[#292929]/50 border-green-500'
                     : 'border-transparent hover:border-blue-500'
@@ -63,7 +63,6 @@ export default function DropdownMenu({
               >
                 <div className="flex items-center justify-between min-w-0">
                   <div className="flex items-center min-w-0 flex-1">
-                    <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${item.type === 'repo' ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                     <span className="truncate">{item.label}</span>
                   </div>
                   {selectedTags.some(tag => tag.type === item.type && tag.value === item.value) && (
