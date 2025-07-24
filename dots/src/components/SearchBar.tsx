@@ -112,10 +112,11 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     return (
       <div className="p-6">
         <div 
-          className="w-12 h-12 bg-[#1D1D1D] border border-[#292929] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#404040] transition-colors"
+          className="w-12 h-12 bg-[#1D1D1D] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#404040] transition-colors"
+          style={{ border: '1.4px solid #404040' }}
           onClick={onExpand}
         >
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
