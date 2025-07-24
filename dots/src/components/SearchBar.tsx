@@ -6,15 +6,36 @@ import SearchInput from "./SearchInput";
 import Tags from "./Tags";
 import DropdownMenu from "./DropdownMenu";
 
+/**
+ * SearchBar component - Main search interface with tag selection
+ * Manages the complete search state including selected tags, dropdown visibility,
+ * API data fetching, and user interactions
+ */
 export default function SearchBar() {
+  // Search input value
   const [searchValue, setSearchValue] = useState("");
+  
+  // Array of selected tags (repositories and topics)
   const [selectedTags, setSelectedTags] = useState<CombinedItem[]>([]);
+  
+  // Controls dropdown menu visibility
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  
+  // API response data (repositories and topics)
   const [data, setData] = useState<DataResponse | null>(null);
+  
+  // Loading state for API calls
   const [loading, setLoading] = useState(false);
+  
+  // Error state for API failures
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Handles input click - fetches data on first click if not already loaded
+   * Opens the dropdown menu for tag selection
+   */
   const handleInputClick = async () => {
+    // Only fetch data if we haven't loaded it yet and aren't currently loading
     if (!data && !loading) {
       setLoading(true);
       setError(null);
@@ -37,22 +58,35 @@ export default function SearchBar() {
         setLoading(false);
       }
     }
+    // Always open the dropdown when input is clicked
     setIsPopupOpen(true);
   };
 
+  /**
+   * Handles input blur with delay to allow clicking on dropdown items
+   * The 200ms delay prevents the dropdown from closing immediately when clicking items
+   */
   const handleInputBlur = () => {
     // Delay closing to allow clicking on items
     setTimeout(() => setIsPopupOpen(false), 200);
   };
 
+  /**
+   * Removes a tag from the selected tags array
+   * Compares both type and value to ensure correct tag removal
+   */
   const removeTag = (tagToRemove: CombinedItem) => {
     setSelectedTags(selectedTags.filter(tag => 
       !(tag.type === tagToRemove.type && tag.value === tagToRemove.value)
     ));
   };
 
+  /**
+   * Handles selection of a tag from the dropdown
+   * Prevents duplicate selections and closes the dropdown
+   */
   const handleItemSelect = (item: CombinedItem) => {
-    // Check if tag is already selected
+    // Check if tag is already selected to prevent duplicates
     const isAlreadySelected = selectedTags.some(tag => 
       tag.type === item.type && tag.value === item.value
     );
@@ -65,13 +99,17 @@ export default function SearchBar() {
 
   return (
     <div className="relative">
+      {/* Main search container with dynamic height based on selected tags */}
       <div 
         className={`w-full bg-[#1D1D1D] rounded-[20px] border border-[#404040] focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200 hover:border-[#505050] focus-within:border-blue-500 cursor-pointer ${
           selectedTags.length > 0 ? 'min-h-12' : 'h-12'
         }`}
         onClick={handleInputClick}
       >
+        {/* Display selected tags as removable chips */}
         <Tags selectedTags={selectedTags} onRemoveTag={removeTag} />
+        
+        {/* Search input field */}
         <SearchInput
           searchValue={searchValue}
           setSearchValue={setSearchValue}
@@ -81,6 +119,7 @@ export default function SearchBar() {
         />
       </div>
 
+      {/* Dropdown menu for tag selection */}
       <DropdownMenu
         isOpen={isPopupOpen}
         loading={loading}
