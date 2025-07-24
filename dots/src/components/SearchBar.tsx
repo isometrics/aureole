@@ -112,20 +112,20 @@ export default function SearchBar() {
         </div>
       </div>
 
-      {/* Modern Search Popup */}
-      {isPopupOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#1D1D1D] border border-[#404040] rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden">
-          {/* Search Results Container */}
-          <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-[#404040] scrollbar-track-transparent">
+              {/* Modern Search Popup */}
+        {isPopupOpen && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-[#292929] rounded-2xl shadow-2xl z-50 max-h-80 overflow-hidden">
+            {/* Search Results Container */}
+            <div className="max-h-80 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-[#404040] scrollbar-track-transparent">
             {loading && (
               <div className="flex items-center justify-center p-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                <span className="ml-3 text-gray-400 text-sm font-inter">Loading repositories...</span>
+                <span className="ml-3 text-gray-400 text-[14px] font-inter font-medium">Loading repositories...</span>
               </div>
             )}
             
             {error && (
-              <div className="p-4 text-center text-red-400 text-sm font-inter">
+              <div className="p-4 text-center text-red-400 text-[14px] font-inter font-medium">
                 <div className="flex items-center justify-center">
                   <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -140,11 +140,12 @@ export default function SearchBar() {
                 {data.all_items.map((item: CombinedItem, index: number) => (
                   <div
                     key={`${item.type}-${item.value}-${index}`}
-                    className={`px-6 py-3 hover:bg-[#292929] cursor-pointer text-white text-sm transition-colors duration-150 ease-in-out border-l-2 font-inter ${
+                    className={`px-6 py-3 hover:bg-[#292929] cursor-pointer text-white text-[14px] transition-colors duration-150 ease-in-out border-l-2 font-inter ${
                       selectedTags.some(tag => tag.type === item.type && tag.value === item.value)
                         ? 'bg-[#292929]/50 border-green-500'
                         : 'border-transparent hover:border-blue-500'
                     }`}
+                    style={{ fontWeight: 500 }}
                     onClick={() => {
                       // Check if tag is already selected
                       const isAlreadySelected = selectedTags.some(tag => 
@@ -157,13 +158,13 @@ export default function SearchBar() {
                       setIsPopupOpen(false);
                     }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
+                    <div className="flex items-center justify-between min-w-0">
+                      <div className="flex items-center min-w-0 flex-1">
                         <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${item.type === 'repo' ? 'bg-green-500' : 'bg-blue-500'}`}></div>
                         <span className="truncate">{item.label}</span>
                       </div>
                       {selectedTags.some(tag => tag.type === item.type && tag.value === item.value) && (
-                        <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-4 h-4 text-green-500 flex-shrink-0 ml-2" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -176,7 +177,7 @@ export default function SearchBar() {
           
           {/* Footer with count */}
           {data && !loading && !error && (
-            <div className="px-4 py-2 border-t border-[#404040] bg-[#252525] text-xs text-gray-400 font-inter">
+            <div className="px-4 py-2 border-t border-[#404040] bg-[#252525] text-[14px] text-gray-400 font-inter font-medium">
               {data.metadata.total_items} items available
             </div>
           )}
