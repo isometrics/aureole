@@ -120,12 +120,12 @@ export default function SearchBar() {
             {loading && (
               <div className="flex items-center justify-center p-6">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                <span className="ml-3 text-gray-400 text-[14px] font-inter font-medium">Loading repositories...</span>
+                <span className="ml-3 text-gray-400 text-[14px] font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>Loading repositories...</span>
               </div>
             )}
             
             {error && (
-              <div className="p-4 text-center text-red-400 text-[14px] font-inter font-medium">
+              <div className="p-4 text-center text-red-400 text-[14px] font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>
                 <div className="flex items-center justify-center">
                   <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -137,6 +137,11 @@ export default function SearchBar() {
             
             {data && !loading && !error && (
               <div className="py-3">
+                <div className="px-6 py-2">
+                  <span className="font-inter text-[12px]" style={{ fontWeight: 600, fontStyle: 'normal', color: '#9C9C9C' }}>
+                    Repositories
+                  </span>
+                </div>
                 {data.all_items.map((item: CombinedItem, index: number) => (
                   <div
                     key={`${item.type}-${item.value}-${index}`}
@@ -145,7 +150,7 @@ export default function SearchBar() {
                         ? 'bg-[#292929]/50 border-green-500'
                         : 'border-transparent hover:border-blue-500'
                     }`}
-                    style={{ fontWeight: 500 }}
+                    style={{ fontWeight: 400, fontStyle: 'normal' }}
                     onClick={() => {
                       // Check if tag is already selected
                       const isAlreadySelected = selectedTags.some(tag => 
@@ -177,7 +182,7 @@ export default function SearchBar() {
           
           {/* Footer with count */}
           {data && !loading && !error && (
-            <div className="px-4 py-2 border-t border-[#404040] bg-[#252525] text-[14px] text-gray-400 font-inter font-medium">
+            <div className="px-4 py-2 border-t border-[#404040] bg-[#252525] text-[14px] text-gray-400 font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>
               {data.metadata.total_items} items available
             </div>
           )}
