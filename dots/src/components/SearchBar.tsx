@@ -7,11 +7,21 @@ import Tags from "./Tags";
 import DropdownMenu from "./DropdownMenu";
 
 /**
+ * Props interface for the SearchBar component
+ * @param isCollapsed - Whether the search bar should be in collapsed state
+ * @param onExpand - Callback function to expand the sidebar when search circle is clicked
+ */
+interface SearchBarProps {
+  isCollapsed?: boolean;
+  onExpand?: () => void;
+}
+
+/**
  * SearchBar component - Main search interface with tag selection
  * Manages the complete search state including selected tags, dropdown visibility,
  * API data fetching, and user interactions
  */
-export default function SearchBar() {
+export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarProps) {
   // Search input value
   const [searchValue, setSearchValue] = useState("");
   
@@ -97,8 +107,24 @@ export default function SearchBar() {
     setIsPopupOpen(false);
   };
 
+  // If collapsed, show just a circle with magnifying glass
+  if (isCollapsed) {
+    return (
+      <div className="p-6">
+        <div 
+          className="w-12 h-12 bg-[#1D1D1D] border border-[#292929] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#404040] transition-colors"
+          onClick={onExpand}
+        >
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative">
+    <div className="relative p-6">
       {/* Main search container with dynamic height based on selected tags */}
       <div 
         className={`w-full bg-[#1D1D1D] rounded-[20px] border border-[#404040] focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200 hover:border-[#505050] focus-within:border-blue-500 cursor-pointer ${

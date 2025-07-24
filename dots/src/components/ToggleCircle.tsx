@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ToggleCircleProps {
   onToggle?: (isRotated: boolean) => void;
+  isCollapsed?: boolean;
 }
 
-export default function ToggleCircle({ onToggle }: ToggleCircleProps) {
+export default function ToggleCircle({ onToggle, isCollapsed }: ToggleCircleProps) {
   const [isRotated, setIsRotated] = useState(false);
+
+  // Sync internal state with external collapse state
+  useEffect(() => {
+    setIsRotated(isCollapsed || false);
+  }, [isCollapsed]);
 
   const handleCircleClick = () => {
     const newState = !isRotated;
