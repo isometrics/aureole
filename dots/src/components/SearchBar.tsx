@@ -26,12 +26,6 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   // Search input value
   const [searchValue, setSearchValue] = useState("");
   
-  // Debounced search value for filtering
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
-  
-  // Search loading state
-  const [isSearching, setIsSearching] = useState(false);
-
   // Array of selected tags (repositories and topics)
   const [selectedTags, setSelectedTags] = useState<CombinedItem[]>([]);
   
@@ -47,163 +41,53 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   // Error state for API failures
   const [error, setError] = useState<string | null>(null);
 
-  // Fuse.js search instance
-  const fuseRef = useRef<Fuse<CombinedItem> | null>(null);
-
-  // Initialize Fuse.js when data is available
+  // Server-side search with debouncing
   useEffect(() => {
-    if (data && data.all_items.length > 0) {
-      // Use requestIdleCallback to initialize Fuse.js without blocking the UI
-      const initFuse = () => {
-        fuseRef.current = new Fuse(data.all_items, {
-          keys: ['label', 'value'],
-          threshold: 0.3, // Lower threshold = more strict matching
-          includeScore: false, // Don't include scores for better performance
-          ignoreLocation: true, // Search anywhere in the string
-          useExtendedSearch: false, // Disable extended search for speed
-          minMatchCharLength: 1, // Match single characters
-        });
-      };
-
-      // Use requestIdleCallback if available, otherwise setTimeout
-      if (typeof requestIdleCallback !== 'undefined') {
-        requestIdleCallback(initFuse);
-      } else {
-        setTimeout(initFuse, 0);
-      }
+    // Only run search when user is actually typing
+    if (!searchValue.trim()) {
+      return; // Don't do anything if no search value
     }
-  }, [data]);
 
-  // Optimized search value setter
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchValue(value);
-    setIsSearching(true);
-  }, []);
+    const searchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/data?q=${encodeURIComponent(searchValue)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Search error:', err);
+        setError(err instanceof Error ? err.message : 'Search failed');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Debounce search input to prevent lag
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchValue(searchValue);
-      setIsSearching(false);
-    }, 50); // Much faster - 50ms delay
-
+    const timer = setTimeout(searchData, 800); // 800ms debounce
     return () => clearTimeout(timer);
-  }, [searchValue]);
-  
-  // IndexedDB setup and operations
-  const initDB = (): Promise<IDBDatabase> => {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('DotsCache', 1);
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-      
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains('apiData')) {
-          db.createObjectStore('apiData', { keyPath: 'id' });
-        }
-      };
-    });
-  };
+  }, [searchValue]); // Only depend on searchValue, not data or loading
 
-  const loadCachedData = async (): Promise<DataResponse | null> => {
-    try {
-      const db = await initDB();
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction(['apiData'], 'readonly');
-        const store = transaction.objectStore('apiData');
-        const request = store.get('dots_data');
-        
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => {
-          const result = request.result;
-          if (result && result.timestamp) {
-            const cacheAge = Date.now() - result.timestamp;
-            const cacheValid = cacheAge < 24 * 60 * 60 * 1000; // 24 hours
-            
-            if (cacheValid) {
-              resolve(result.data);
-            } else {
-              // Cache expired, remove it
-              const deleteTransaction = db.transaction(['apiData'], 'readwrite');
-              const deleteStore = deleteTransaction.objectStore('apiData');
-              deleteStore.delete('dots_data');
-              resolve(null);
-            }
-          } else {
-            resolve(null);
-          }
-        };
-      });
-    } catch (err) {
-      console.error('Error loading cached data:', err);
-      return null;
-    }
-  };
-
-  const cacheData = async (apiData: DataResponse): Promise<void> => {
-    try {
-      const db = await initDB();
-      const transaction = db.transaction(['apiData'], 'readwrite');
-      const store = transaction.objectStore('apiData');
-      
-      await new Promise((resolve, reject) => {
-        const request = store.put({
-          id: 'dots_data',
-          data: apiData,
-          timestamp: Date.now()
-        });
-        
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
-      });
-    } catch (err) {
-      console.error('Error caching data:', err);
-    }
-  };
-
-  // Load cached data on component mount
+  // Load initial data only once on mount
   useEffect(() => {
-    loadCachedData().then(cachedData => {
-      if (cachedData) {
-        setData(cachedData);
+    const loadInitialData = async () => {
+      if (data) return; // Don't load if we already have data
+      
+      setLoading(true);
+      try {
+        const response = await fetch('/api/data');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
       }
-    });
-  }, []);
+    };
 
-  // Fast search using Fuse.js - memoized for performance
-  const filteredData = useMemo(() => {
-    if (!data) return null;
-    
-    if (!debouncedSearchValue.trim()) {
-      return {
-        ...data,
-        all_items: data.all_items.slice(0, 50) // Show first 50 when no search
-      };
-    }
-
-    // Use Fuse.js if available, otherwise fallback to simple search
-    if (fuseRef.current) {
-      const results = fuseRef.current.search(debouncedSearchValue, {
-        limit: 50 // Limit results for performance
-      });
-      return {
-        ...data,
-        all_items: results.map(result => result.item)
-      };
-    } else {
-      // Fallback to simple search while Fuse.js initializes
-      const filtered = data.all_items.filter(item => 
-        item.label.toLowerCase().includes(debouncedSearchValue.toLowerCase()) ||
-        String(item.value).toLowerCase().includes(debouncedSearchValue.toLowerCase())
-      );
-      return {
-        ...data,
-        all_items: filtered.slice(0, 50)
-      };
-    }
-  }, [data, debouncedSearchValue]);
+    loadInitialData();
+  }, []); // Empty dependency array - only runs once on mount
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -245,7 +129,6 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
         }
         const result = await response.json();
         setData(result);
-        await cacheData(result); // Cache the fetched data
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -324,7 +207,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
         {/* Search input field */}
         <SearchInput
           searchValue={searchValue}
-          setSearchValue={handleSearchChange}
+          setSearchValue={setSearchValue}
           selectedTags={selectedTags}
           onInputClick={handleInputClick}
           onInputBlur={handleInputBlur}
@@ -334,9 +217,9 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
       {/* Dropdown menu for tag selection */}
       <DropdownMenu
         isOpen={isPopupOpen}
-        loading={loading || isSearching}
+        loading={loading}
         error={error}
-        data={filteredData}
+        data={data}
         selectedTags={selectedTags}
         onItemSelect={handleItemSelect}
       />
