@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 
     // Cache miss or expired - fetch fresh data from backend API
     console.log('Cache miss - fetching fresh data from backend API');
-    const response = await fetch('http://localhost:5001/api/data', {
+    const response = await fetch('http://localhost:4995/api/data', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
