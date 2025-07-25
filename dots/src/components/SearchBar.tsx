@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
@@ -25,6 +25,28 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   // Search input value
   const [searchValue, setSearchValue] = useState("");
   
+  // Debounced search value for filtering
+  const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
+  
+  // Search loading state
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Optimized search value setter
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchValue(value);
+    setIsSearching(true);
+  }, []);
+
+  // Debounce search input to prevent lag
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchValue(searchValue);
+      setIsSearching(false);
+    }, 50); // Much faster - 50ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+  
   // Array of selected tags (repositories and topics)
   const [selectedTags, setSelectedTags] = useState<CombinedItem[]>([]);
   
@@ -39,6 +61,109 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   
   // Error state for API failures
   const [error, setError] = useState<string | null>(null);
+
+  // IndexedDB setup and operations
+  const initDB = (): Promise<IDBDatabase> => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('DotsCache', 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('apiData')) {
+          db.createObjectStore('apiData', { keyPath: 'id' });
+        }
+      };
+    });
+  };
+
+  const loadCachedData = async (): Promise<DataResponse | null> => {
+    try {
+      const db = await initDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['apiData'], 'readonly');
+        const store = transaction.objectStore('apiData');
+        const request = store.get('dots_data');
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const result = request.result;
+          if (result && result.timestamp) {
+            const cacheAge = Date.now() - result.timestamp;
+            const cacheValid = cacheAge < 24 * 60 * 60 * 1000; // 24 hours
+            
+            if (cacheValid) {
+              resolve(result.data);
+            } else {
+              // Cache expired, remove it
+              const deleteTransaction = db.transaction(['apiData'], 'readwrite');
+              const deleteStore = deleteTransaction.objectStore('apiData');
+              deleteStore.delete('dots_data');
+              resolve(null);
+            }
+          } else {
+            resolve(null);
+          }
+        };
+      });
+    } catch (err) {
+      console.error('Error loading cached data:', err);
+      return null;
+    }
+  };
+
+  const cacheData = async (apiData: DataResponse): Promise<void> => {
+    try {
+      const db = await initDB();
+      const transaction = db.transaction(['apiData'], 'readwrite');
+      const store = transaction.objectStore('apiData');
+      
+      await new Promise((resolve, reject) => {
+        const request = store.put({
+          id: 'dots_data',
+          data: apiData,
+          timestamp: Date.now()
+        });
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+      });
+    } catch (err) {
+      console.error('Error caching data:', err);
+    }
+  };
+
+  // Load cached data on component mount
+  useEffect(() => {
+    loadCachedData().then(cachedData => {
+      if (cachedData) {
+        setData(cachedData);
+      }
+    });
+  }, []);
+
+  // Fast search function - much more efficient than fuzzy search
+  const fastSearch = useCallback((query: string, text: string): boolean => {
+    if (!query) return true;
+    return text.toLowerCase().includes(query.toLowerCase());
+  }, []);
+
+  // Filter data based on search value - memoized for performance with result limiting
+  const filteredData = useMemo(() => {
+    if (!data) return null;
+    
+    const filtered = data.all_items.filter(item => 
+      fastSearch(debouncedSearchValue, item.label) || fastSearch(debouncedSearchValue, String(item.value))
+    );
+    
+    // Limit results to first 50 items for better performance
+    return {
+      ...data,
+      all_items: filtered.slice(0, 50)
+    };
+  }, [data, debouncedSearchValue, fastSearch]);
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -80,6 +205,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
         }
         const result = await response.json();
         setData(result);
+        await cacheData(result); // Cache the fetched data
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -158,7 +284,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
         {/* Search input field */}
         <SearchInput
           searchValue={searchValue}
-          setSearchValue={setSearchValue}
+          setSearchValue={handleSearchChange}
           selectedTags={selectedTags}
           onInputClick={handleInputClick}
           onInputBlur={handleInputBlur}
@@ -168,9 +294,9 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
       {/* Dropdown menu for tag selection */}
       <DropdownMenu
         isOpen={isPopupOpen}
-        loading={loading}
+        loading={loading || isSearching}
         error={error}
-        data={data}
+        data={filteredData}
         selectedTags={selectedTags}
         onItemSelect={handleItemSelect}
       />

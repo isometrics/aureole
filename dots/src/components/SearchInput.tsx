@@ -33,10 +33,13 @@ export default function SearchInput({
         type="text"
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onInputClick();
+        }}
         onBlur={onInputBlur}
         placeholder={selectedTags.length === 0 ? "Search for orgs and repos" : "Add more..."}
         className="w-full h-12 pl-9 pr-4 bg-transparent border-none outline-none text-white placeholder-gray-400 font-inter"
-        readOnly
       />
     </div>
   );
