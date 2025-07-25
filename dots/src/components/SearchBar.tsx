@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
+import Fuse from 'fuse.js';
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
 import DropdownMenu from "./DropdownMenu";
@@ -31,6 +32,48 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   // Search loading state
   const [isSearching, setIsSearching] = useState(false);
 
+  // Array of selected tags (repositories and topics)
+  const [selectedTags, setSelectedTags] = useState<CombinedItem[]>([]);
+  
+  // Controls dropdown menu visibility
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  
+  // API response data (repositories and topics)
+  const [data, setData] = useState<DataResponse | null>(null);
+  
+  // Loading state for API calls
+  const [loading, setLoading] = useState(false);
+  
+  // Error state for API failures
+  const [error, setError] = useState<string | null>(null);
+
+  // Fuse.js search instance
+  const fuseRef = useRef<Fuse<CombinedItem> | null>(null);
+
+  // Initialize Fuse.js when data is available
+  useEffect(() => {
+    if (data && data.all_items.length > 0) {
+      // Use requestIdleCallback to initialize Fuse.js without blocking the UI
+      const initFuse = () => {
+        fuseRef.current = new Fuse(data.all_items, {
+          keys: ['label', 'value'],
+          threshold: 0.3, // Lower threshold = more strict matching
+          includeScore: false, // Don't include scores for better performance
+          ignoreLocation: true, // Search anywhere in the string
+          useExtendedSearch: false, // Disable extended search for speed
+          minMatchCharLength: 1, // Match single characters
+        });
+      };
+
+      // Use requestIdleCallback if available, otherwise setTimeout
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(initFuse);
+      } else {
+        setTimeout(initFuse, 0);
+      }
+    }
+  }, [data]);
+
   // Optimized search value setter
   const handleSearchChange = useCallback((value: string) => {
     setSearchValue(value);
@@ -47,21 +90,6 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     return () => clearTimeout(timer);
   }, [searchValue]);
   
-  // Array of selected tags (repositories and topics)
-  const [selectedTags, setSelectedTags] = useState<CombinedItem[]>([]);
-  
-  // Controls dropdown menu visibility
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-  
-  // API response data (repositories and topics)
-  const [data, setData] = useState<DataResponse | null>(null);
-  
-  // Loading state for API calls
-  const [loading, setLoading] = useState(false);
-  
-  // Error state for API failures
-  const [error, setError] = useState<string | null>(null);
-
   // IndexedDB setup and operations
   const initDB = (): Promise<IDBDatabase> => {
     return new Promise((resolve, reject) => {
@@ -144,26 +172,38 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     });
   }, []);
 
-  // Fast search function - much more efficient than fuzzy search
-  const fastSearch = useCallback((query: string, text: string): boolean => {
-    if (!query) return true;
-    return text.toLowerCase().includes(query.toLowerCase());
-  }, []);
-
-  // Filter data based on search value - memoized for performance with result limiting
+  // Fast search using Fuse.js - memoized for performance
   const filteredData = useMemo(() => {
     if (!data) return null;
     
-    const filtered = data.all_items.filter(item => 
-      fastSearch(debouncedSearchValue, item.label) || fastSearch(debouncedSearchValue, String(item.value))
-    );
-    
-    // Limit results to first 50 items for better performance
-    return {
-      ...data,
-      all_items: filtered.slice(0, 50)
-    };
-  }, [data, debouncedSearchValue, fastSearch]);
+    if (!debouncedSearchValue.trim()) {
+      return {
+        ...data,
+        all_items: data.all_items.slice(0, 50) // Show first 50 when no search
+      };
+    }
+
+    // Use Fuse.js if available, otherwise fallback to simple search
+    if (fuseRef.current) {
+      const results = fuseRef.current.search(debouncedSearchValue, {
+        limit: 50 // Limit results for performance
+      });
+      return {
+        ...data,
+        all_items: results.map(result => result.item)
+      };
+    } else {
+      // Fallback to simple search while Fuse.js initializes
+      const filtered = data.all_items.filter(item => 
+        item.label.toLowerCase().includes(debouncedSearchValue.toLowerCase()) ||
+        String(item.value).toLowerCase().includes(debouncedSearchValue.toLowerCase())
+      );
+      return {
+        ...data,
+        all_items: filtered.slice(0, 50)
+      };
+    }
+  }, [data, debouncedSearchValue]);
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
