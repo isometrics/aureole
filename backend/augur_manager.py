@@ -2,11 +2,9 @@
     Imports
 """
 import pandas as pd
-import numpy as np
 import sqlalchemy as salc
 import os
 import logging
-import sys
 import requests
 from sqlalchemy.exc import SQLAlchemyError
 
