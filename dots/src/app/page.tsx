@@ -21,13 +21,22 @@ export default function Home() {
       {/* Topbar */}
       <div className="h-[60px] bg-[#242424] flex items-center px-6 flex-shrink-0">
         <div className="w-[30px]"></div>
-        <div className="flex items-center gap-3">
-          <div className="flex gap-2">
-            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-400 to-purple-500" style={{ animation: 'pulse 2s ease-in-out 3 forwards' }}></div>
-            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-400 to-red-500" style={{ animation: 'pulse 2s ease-in-out 3 0.5s forwards' }}></div>
+        <div className="flex items-center gap-4">
+          {/* Halo Logo */}
+          <div className="relative w-8 h-8">
+            <svg className="w-full h-full" viewBox="0 0 32 32">
+              <defs>
+                <linearGradient id="haloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="50%" stopColor="#ffffff" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+              <circle cx="16" cy="16" r="12" fill="none" stroke="url(#haloGradient)" strokeWidth="3" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent" style={{ animation: 'pulse 2s ease-in-out 3 forwards' }}>
-            DOTS
+          <h1 className="text-2xl font-bold text-white tracking-wide font-inter">
+            Aureole
           </h1>
         </div>
       </div>
