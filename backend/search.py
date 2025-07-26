@@ -18,6 +18,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from augur_manager import AugurManager
 
+# Import Celery tasks
+sys.path.append(os.path.join(os.path.dirname(__file__), 'queries'))
+from queries._celery import celery_app
+from queries.commits_query import commits_query
+from queries.issues_query import issues_query
+from queries.prs_query import prs_query
+from queries.contributors_query import contributors_query
+
 # Configure logging
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO)
 
@@ -201,6 +209,197 @@ def convert_selections():
         
     except Exception as e:
         logging.error(f"Error in convert_selections endpoint: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/celery/tasks', methods=['POST'])
+def submit_celery_tasks():
+    """
+    Submit Celery tasks for data collection.
+    
+    Request body:
+    - repo_ids: List of repository IDs to process
+    - task_types: List of task types to run (commits, issues, prs, contributors)
+    - execution_mode: "async" (default) or "sync" for testing
+    
+    Returns:
+    - Task IDs and status information
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+        
+        repo_ids = data.get('repo_ids', [])
+        task_types = data.get('task_types', ['commits', 'issues', 'prs', 'contributors'])
+        execution_mode = data.get('execution_mode', 'async')
+        
+        if not repo_ids:
+            return jsonify({"error": "repo_ids is required and cannot be empty"}), 400
+        
+        if not isinstance(repo_ids, list):
+            return jsonify({"error": "repo_ids must be a list"}), 400
+        
+        # Task mapping
+        task_mapping = {
+            'commits': commits_query,
+            'issues': issues_query,
+            'prs': prs_query,
+            'contributors': contributors_query
+        }
+        
+        results = {
+            "submitted_tasks": [],
+            "execution_mode": execution_mode,
+            "repo_ids": repo_ids,
+            "task_types": task_types
+        }
+        
+        if execution_mode == 'sync':
+            # Synchronous execution for testing
+            for task_type in task_types:
+                if task_type in task_mapping:
+                    try:
+                        # Execute task directly (synchronous)
+                        task_result = task_mapping[task_type](repo_ids)
+                        results["submitted_tasks"].append({
+                            "task_type": task_type,
+                            "status": "completed",
+                            "result": task_result
+                        })
+                    except Exception as e:
+                        results["submitted_tasks"].append({
+                            "task_type": task_type,
+                            "status": "failed",
+                            "error": str(e)
+                        })
+        else:
+            # Asynchronous execution (default)
+            for task_type in task_types:
+                if task_type in task_mapping:
+                    try:
+                        # Method 1: Using .delay() - Simple async execution
+                        task = task_mapping[task_type].delay(repo_ids)
+                        results["submitted_tasks"].append({
+                            "task_type": task_type,
+                            "task_id": task.id,
+                            "status": "submitted",
+                            "method": "delay"
+                        })
+                    except Exception as e:
+                        results["submitted_tasks"].append({
+                            "task_type": task_type,
+                            "status": "failed",
+                            "error": str(e)
+                        })
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        logging.error(f"Error in submit_celery_tasks endpoint: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/celery/tasks/<task_id>/status', methods=['GET'])
+def get_task_status(task_id):
+    """
+    Get the status of a Celery task.
+    
+    Args:
+    - task_id: The ID of the task to check
+    
+    Returns:
+    - Task status and result if available
+    """
+    try:
+        # Get task result from Celery
+        task_result = celery_app.AsyncResult(task_id)
+        
+        response = {
+            "task_id": task_id,
+            "status": task_result.status,
+            "ready": task_result.ready()
+        }
+        
+        if task_result.ready():
+            if task_result.successful():
+                response["result"] = task_result.result
+            else:
+                response["error"] = str(task_result.info)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logging.error(f"Error getting task status: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/celery/tasks/advanced', methods=['POST'])
+def submit_advanced_celery_tasks():
+    """
+    Submit Celery tasks with advanced options using apply_async.
+    
+    Request body:
+    - repo_ids: List of repository IDs to process
+    - task_types: List of task types to run
+    - options: Advanced options (countdown, eta, priority, etc.)
+    
+    Returns:
+    - Task IDs and status information
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+        
+        repo_ids = data.get('repo_ids', [])
+        task_types = data.get('task_types', ['commits'])
+        options = data.get('options', {})
+        
+        if not repo_ids:
+            return jsonify({"error": "repo_ids is required and cannot be empty"}), 400
+        
+        # Task mapping
+        task_mapping = {
+            'commits': commits_query,
+            'issues': issues_query,
+            'prs': prs_query,
+            'contributors': contributors_query
+        }
+        
+        results = {
+            "submitted_tasks": [],
+            "repo_ids": repo_ids,
+            "task_types": task_types,
+            "options": options
+        }
+        
+        for task_type in task_types:
+            if task_type in task_mapping:
+                try:
+                    # Method 2: Using .apply_async() - Advanced async execution
+                    task = task_mapping[task_type].apply_async(
+                        args=[repo_ids],
+                        **options  # Can include countdown, eta, priority, etc.
+                    )
+                    results["submitted_tasks"].append({
+                        "task_type": task_type,
+                        "task_id": task.id,
+                        "status": "submitted",
+                        "method": "apply_async",
+                        "options": options
+                    })
+                except Exception as e:
+                    results["submitted_tasks"].append({
+                        "task_type": task_type,
+                        "status": "failed",
+                        "error": str(e)
+                    })
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        logging.error(f"Error in submit_advanced_celery_tasks endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
