@@ -10,7 +10,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Aureole",
-  description: "Visualizing Augur Data",
+  description: "Aureole - Visualizing Augur Data",
+  icons: {
+    icon: 'data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMzIgMzIiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+PC9zdmc+',
+  },
 };
 
 export default function RootLayout({
