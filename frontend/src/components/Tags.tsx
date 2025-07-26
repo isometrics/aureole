@@ -13,6 +13,27 @@ interface TagsProps {
 }
 
 /**
+ * Utility function to truncate GitHub URLs to org/repo_name format
+ * @param url - The full GitHub URL
+ * @returns The truncated org/repo_name format or the original string if not a GitHub URL
+ */
+const truncateGitHubUrl = (url: string): string => {
+  try {
+    // Check if it's a GitHub URL
+    if (url.startsWith('https://github.com/')) {
+      // Remove the base URL and get the path
+      const path = url.replace('https://github.com/', '');
+      // Remove trailing slash if present
+      const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+      return cleanPath;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+};
+
+/**
  * Tags component displays selected tags as removable chips
  * Each tag shows a colored indicator, label, and remove button
  * Tags are styled differently based on their type (repo vs topic)
@@ -43,7 +64,9 @@ export default function Tags({ selectedTags, onRemoveTag }: TagsProps) {
           }`}></div>
           
           {/* Tag label with truncation for long text */}
-          <span className="truncate max-w-48">{tag.original_label}</span>
+          <span className="truncate max-w-48">
+            {tag.type === 'repo' ? truncateGitHubUrl(tag.original_label) : tag.original_label}
+          </span>
           
           {/* Remove button with hover effects */}
           <button
