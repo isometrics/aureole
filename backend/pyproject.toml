@@ -12,4 +12,7 @@ dependencies = [
     "requests>=2.32.4",
     "sqlalchemy>=2.0.41",
     "psycopg2-binary>=2.9.10",
+    "setuptools>=80.9.0",
+    "celery>=5.5.3",
+    "redis>=6.2.0",
 ]
