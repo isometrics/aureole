@@ -4,6 +4,8 @@ Connection Common file - accessing environment variables
 import os
 import logging
 import time
+from dotenv import load_dotenv
+load_dotenv()
 
 # credentials to access database from environment
 try:
