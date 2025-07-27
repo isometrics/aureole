@@ -3,9 +3,9 @@ import pandas as pd
 import logging
 from dateutil.relativedelta import *  # type: ignore
 import plotly.express as px
-from pages.utils.graph_utils import color_seq
-from queries.repo_languages_query import repo_languages_query as rlq
-from pages.utils.job_utils import nodata_graph
+from utils.graph_utils import color_seq
+from celery_app import repo_languages_query as rlq
+from utils.job_utils import nodata_graph
 import time
 import datetime as dt
 import cache_manager.cache_facade as cf
@@ -13,115 +13,115 @@ import cache_manager.cache_facade as cf
 PAGE = "repo_info"
 VIZ_ID = "code-languages"
 
-gc_code_language = dbc.Card(
-    [
-        dbc.CardBody(
-            [
-                html.H3(
-                    id=f"graph-title-{PAGE}-{VIZ_ID}",
-                    className="card-title",
-                    style={"textAlign": "center"},
-                ),
-                dbc.Popover(
-                    [
-                        dbc.PopoverHeader("Graph Info:"),
-                        dbc.PopoverBody(
-                            """
-                            Visualizes the percent of files or lines of code by language.
-                            """
-                        ),
-                    ],
-                    id=f"popover-{PAGE}-{VIZ_ID}",
-                    target=f"popover-target-{PAGE}-{VIZ_ID}",
-                    placement="top",
-                    is_open=False,
-                ),
-                dcc.Loading(
-                    dcc.Graph(id=f"{PAGE}-{VIZ_ID}"),
-                ),
-                dbc.Form(
-                    [
-                        dbc.Row(
-                            [
-                                dbc.Label(
-                                    "Graph View:",
-                                    html_for=f"graph-view-{PAGE}-{VIZ_ID}",
-                                    width="auto",
-                                ),
-                                dbc.Col(
-                                    dbc.RadioItems(
-                                        id=f"graph-view-{PAGE}-{VIZ_ID}",
-                                        options=[
-                                            {
-                                                "label": "Files",
-                                                "value": "file",
-                                            },
-                                            {
-                                                "label": "Lines of Code",
-                                                "value": "line",
-                                            },
-                                        ],
-                                        value="file",
-                                        inline=True,
-                                    ),
-                                    className="me-2",
-                                ),
-                                dbc.Col(
-                                    dbc.Button(
-                                        "About Graph",
-                                        id=f"popover-target-{PAGE}-{VIZ_ID}",
-                                        color="secondary",
-                                        size="sm",
-                                    ),
-                                    width="auto",
-                                    style={"paddingTop": ".5em"},
-                                ),
-                            ],
-                            align="center",
-                        ),
-                    ]
-                ),
-            ]
-        )
-    ],
-)
+# gc_code_language = dbc.Card(
+#     [
+#         dbc.CardBody(
+#             [
+#                 html.H3(
+#                     id=f"graph-title-{PAGE}-{VIZ_ID}",
+#                     className="card-title",
+#                     style={"textAlign": "center"},
+#                 ),
+#                 dbc.Popover(
+#                     [
+#                         dbc.PopoverHeader("Graph Info:"),
+#                         dbc.PopoverBody(
+#                             """
+#                             Visualizes the percent of files or lines of code by language.
+#                             """
+#                         ),
+#                     ],
+#                     id=f"popover-{PAGE}-{VIZ_ID}",
+#                     target=f"popover-target-{PAGE}-{VIZ_ID}",
+#                     placement="top",
+#                     is_open=False,
+#                 ),
+#                 dcc.Loading(
+#                     dcc.Graph(id=f"{PAGE}-{VIZ_ID}"),
+#                 ),
+#                 dbc.Form(
+#                     [
+#                         dbc.Row(
+#                             [
+#                                 dbc.Label(
+#                                     "Graph View:",
+#                                     html_for=f"graph-view-{PAGE}-{VIZ_ID}",
+#                                     width="auto",
+#                                 ),
+#                                 dbc.Col(
+#                                     dbc.RadioItems(
+#                                         id=f"graph-view-{PAGE}-{VIZ_ID}",
+#                                         options=[
+#                                             {
+#                                                 "label": "Files",
+#                                                 "value": "file",
+#                                             },
+#                                             {
+#                                                 "label": "Lines of Code",
+#                                                 "value": "line",
+#                                             },
+#                                         ],
+#                                         value="file",
+#                                         inline=True,
+#                                     ),
+#                                     className="me-2",
+#                                 ),
+#                                 dbc.Col(
+#                                     dbc.Button(
+#                                         "About Graph",
+#                                         id=f"popover-target-{PAGE}-{VIZ_ID}",
+#                                         color="secondary",
+#                                         size="sm",
+#                                     ),
+#                                     width="auto",
+#                                     style={"paddingTop": ".5em"},
+#                                 ),
+#                             ],
+#                             align="center",
+#                         ),
+#                     ]
+#                 ),
+#             ]
+#         )
+#     ],
+# )
 
 
-# callback for graph info popover
-@callback(
-    Output(f"popover-{PAGE}-{VIZ_ID}", "is_open"),
-    [Input(f"popover-target-{PAGE}-{VIZ_ID}", "n_clicks")],
-    [State(f"popover-{PAGE}-{VIZ_ID}", "is_open")],
-)
-def toggle_popover(n, is_open):
-    if n:
-        return not is_open
-    return is_open
+# # callback for graph info popover
+# @callback(
+#     Output(f"popover-{PAGE}-{VIZ_ID}", "is_open"),
+#     [Input(f"popover-target-{PAGE}-{VIZ_ID}", "n_clicks")],
+#     [State(f"popover-{PAGE}-{VIZ_ID}", "is_open")],
+# )
+# def toggle_popover(n, is_open):
+#     if n:
+#         return not is_open
+#     return is_open
 
 
-# callback for dynamically changing the graph title
-@callback(
-    Output(f"graph-title-{PAGE}-{VIZ_ID}", "children"),
-    Input(f"graph-view-{PAGE}-{VIZ_ID}", "value"),
-)
-def graph_title(view):
-    title = ""
-    if view == "file":
-        title = "File Language by File"
-    else:
-        title = "File Language by Line"
-    return title
+# # callback for dynamically changing the graph title
+# @callback(
+#     Output(f"graph-title-{PAGE}-{VIZ_ID}", "children"),
+#     Input(f"graph-view-{PAGE}-{VIZ_ID}", "value"),
+# )
+# def graph_title(view):
+#     title = ""
+#     if view == "file":
+#         title = "File Language by File"
+#     else:
+#         title = "File Language by Line"
+#     return title
 
 
 # callback for code languages graph
-@callback(
-    Output(f"{PAGE}-{VIZ_ID}", "figure"),
-    [
-        Input("repo-choices", "data"),
-        Input(f"graph-view-{PAGE}-{VIZ_ID}", "value"),
-    ],
-    background=True,
-)
+# @callback(
+#     Output(f"{PAGE}-{VIZ_ID}", "figure"),
+#     [
+#         Input("repo-choices", "data"),
+#         Input(f"graph-view-{PAGE}-{VIZ_ID}", "value"),
+#     ],
+#     background=True,
+# )
 def code_languages_graph(repolist, view):
     # wait for data to asynchronously download and become available.
     while not_cached := cf.get_uncached(func_name=rlq.__name__, repolist=repolist):
@@ -195,3 +195,7 @@ def create_figure(df: pd.DataFrame, view):
     fig.update_layout(legend_title_text="Languages")
 
     return fig
+
+if __name__ == "__main__":
+    fig = code_languages_graph([72192, 36113, 71441], "file")
+    fig.write_html("code_languages.html")
