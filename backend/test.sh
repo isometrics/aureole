@@ -1,0 +1,1 @@
+curl -X POST http://localhost:4995/api/run_tasks -H "Content-Type: application/json" -d '{"repo_ids": [72192, 36113, 71441]}'

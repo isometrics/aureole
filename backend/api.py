@@ -214,7 +214,7 @@ def run_tasks():
         repo_info_query, affiliation_query,
         commits_query, contributors_query, issue_assignee_query,
         issues_query, ossf_score_query, package_version_query,
-        pr_assignee_query, pr_file_query, pr_response_query,
+        pr_assignee_query, pr_response_query,
         prs_query, repo_releases_query, repo_languages_query
     )
     
@@ -223,7 +223,7 @@ def run_tasks():
         repo_info_query, affiliation_query,
         commits_query, contributors_query, issue_assignee_query,
         issues_query, ossf_score_query, package_version_query,
-        pr_assignee_query, pr_file_query, pr_response_query,
+        pr_assignee_query, pr_response_query,
         prs_query, repo_releases_query, repo_languages_query
     ]
     
