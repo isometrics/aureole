@@ -9,7 +9,7 @@ import json
 from flask import Flask, request, jsonify
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-from jobs.db_manager.augur_manager import AugurManager
+from db_manager.augur_manager import AugurManager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -201,6 +201,73 @@ def convert_selections():
     except Exception as e:
         logging.error(f"Error in convert_selections endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/run_tasks', methods=['POST'])
+def run_tasks():
+    """Run all tasks against a list of repositories."""
+    data = request.get_json()
+    repo_ids = data.get('repo_ids', [])
+    
+    # Import all Celery tasks
+    from celery_app import (
+        repo_info_query, affiliation_query,
+        commits_query, contributors_query, issue_assignee_query,
+        issues_query, ossf_score_query, package_version_query,
+        pr_assignee_query, pr_file_query, pr_response_query,
+        prs_query, repo_releases_query, repo_languages_query
+    )
+    
+    # Execute all tasks
+    all_tasks = [
+        repo_info_query, affiliation_query,
+        commits_query, contributors_query, issue_assignee_query,
+        issues_query, ossf_score_query, package_version_query,
+        pr_assignee_query, pr_file_query, pr_response_query,
+        prs_query, repo_releases_query, repo_languages_query
+    ]
+    
+    results = []
+    for task in all_tasks:
+        task_result = task.delay(repo_ids)
+        results.append({
+            "job_id": task_result.id,
+            "status": "queued"
+        })
+    
+    return jsonify({
+        "message": f"Queued {len(results)} tasks for {len(repo_ids)} repositories",
+        "results": results
+    })
+
+
+@app.route('/api/task_status', methods=['POST'])
+def get_task_status():
+    """Get the status of running tasks by their job IDs."""
+    data = request.get_json()
+    job_ids = data.get('job_ids', [])
+    
+    from celery_app import app as celery_app
+    
+    results = []
+    for job_id in job_ids:
+        task_result = celery_app.AsyncResult(job_id)
+        
+        status_info = {
+            "job_id": job_id,
+            "status": task_result.status,
+            "ready": task_result.ready()
+        }
+        
+        if task_result.ready():
+            if task_result.successful():
+                status_info["result"] = "completed"
+            else:
+                status_info["error"] = str(task_result.info)
+        
+        results.append(status_info)
+    
+    return jsonify({"results": results})
 
 
 if __name__ == '__main__':
