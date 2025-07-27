@@ -9,7 +9,7 @@ import json
 from flask import Flask, request, jsonify
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-from augur_manager import AugurManager
+from jobs.db_manager.augur_manager import AugurManager
 
 # Load environment variables from .env file
 load_dotenv()
