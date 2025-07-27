@@ -67,6 +67,8 @@ def get_all_data():
     
     Returns:
     - Complete dataset with repositories, organizations, combined list, and metadata
+    - Each repository includes repo_ids with a single repo ID
+    - Each organization includes repo_ids with a list of repo IDs for all repos in that org
     """
     try:
         if augur_manager is None:
@@ -88,16 +90,23 @@ def get_all_data():
                     "label": opt["label"],
                     "value": opt["value"],
                     "type": "repo",
-                    "formatted_label": f"repo: {opt['label']}"
+                    "formatted_label": f"repo: {opt['label']}",
+                    "repo_ids": [opt["value"]]  # Single repo ID for individual repos
                 }
                 repos.append(repo_data)
             else:
-                # It's an org
+                # It's an org - get all repo IDs for this organization
+                org_name = opt["value"]
+                org_repo_ids = []
+                if augur_manager.is_org(org_name):
+                    org_repo_ids = augur_manager.org_to_repos(org_name)
+                
                 org_data = {
                     "label": opt["label"],
                     "value": opt["value"],
                     "type": "org",
-                    "formatted_label": f"org: {opt['label']}"
+                    "formatted_label": f"org: {opt['label']}",
+                    "repo_ids": org_repo_ids  # List of repo IDs for organizations
                 }
                 orgs.append(org_data)
         
@@ -118,26 +127,36 @@ def get_all_data():
                 "label": repo["formatted_label"],
                 "value": repo["value"],
                 "type": "repo",
-                "original_label": repo["label"]
+                "original_label": repo["label"],
+                "repo_ids": repo["repo_ids"]
             })
         for org in orgs:
             response_data["all_items"].append({
                 "label": org["formatted_label"],
                 "value": org["value"],
                 "type": "org",
-                "original_label": org["label"]
+                "original_label": org["label"],
+                "repo_ids": org["repo_ids"]
             })
         
         # Add metadata if requested
         if include_metadata:
+            # Calculate total unique repo IDs across all items
+            all_repo_ids = set()
+            for repo in repos:
+                all_repo_ids.update(repo["repo_ids"])
+            for org in orgs:
+                all_repo_ids.update(org["repo_ids"])
+            
             metadata = {
                 "total_repositories": len(repos),
                 "total_organizations": len(orgs),
                 "total_items": len(repos) + len(orgs),
+                "total_unique_repo_ids": len(all_repo_ids),
                 "last_updated": augur_manager.get_last_update_time() if hasattr(augur_manager, 'get_last_update_time') else None,
                 "dataset_info": {
-                    "description": "Complete dataset of repositories and organizations for client-side search",
-                    "usage": "Use this data for client-side fuzzy search and filtering",
+                    "description": "Complete dataset of repositories and organizations with repo_ids for client-side processing",
+                    "usage": "Use this data for client-side fuzzy search and filtering. Each item includes repo_ids field with individual repo ID for repos or list of repo IDs for organizations.",
                     "recommended_client_libraries": ["rapidfuzz", "fuse.js", "fuse.js"]
                 }
             }

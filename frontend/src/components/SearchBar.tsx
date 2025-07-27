@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
+import { extractAllRepoIds, getSelectionSummary } from "@/utils/repoUtils";
 import Fuse from 'fuse.js';
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
@@ -174,6 +175,28 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     }
     setIsPopupOpen(false);
   };
+
+  /**
+   * Get all unique repo IDs from selected items
+   * This demonstrates how to use the new repo_ids functionality
+   */
+  const getAllSelectedRepoIds = useCallback(() => {
+    return extractAllRepoIds(selectedTags);
+  }, [selectedTags]);
+
+  /**
+   * Get a summary of the current selection
+   * This demonstrates how to use the selection summary utility
+   */
+  const getCurrentSelectionSummary = useCallback(() => {
+    return getSelectionSummary(selectedTags);
+  }, [selectedTags]);
+
+  // Log current repo list whenever selection changes
+  useEffect(() => {
+    const allRepoIds = extractAllRepoIds(selectedTags);
+    console.log('Current repo_list =', allRepoIds);
+  }, [selectedTags]);
 
   // If collapsed, show just a circle with magnifying glass
   if (isCollapsed) {
