@@ -169,39 +169,22 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       )}
 
       {/* Input Area */}
-      <div className="p-6 border-t border-[#292929] flex-shrink-0">
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask me anything about your data..."
-              className="w-full bg-[#292929] text-white placeholder-gray-400 rounded-xl px-4 py-3 resize-none border border-[#404040] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors font-inter"
-              style={{ fontSize: '18px', minHeight: '44px', maxHeight: '120px' }}
-              rows={1}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-              }}
-            />
-          </div>
-          <button
-            onClick={sendMessage}
-            disabled={!inputValue.trim() || isLoading}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl px-4 py-3 transition-colors flex items-center justify-center min-w-[44px]"
-          >
-            {isLoading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            )}
-          </button>
-        </div>
+      <div className="p-6 flex-shrink-0">
+        <textarea
+          ref={inputRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Ask me anything about your data..."
+          className="w-full bg-[#292929] text-white placeholder-gray-400 rounded-xl px-4 py-3 resize-none border border-[#404040] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors font-inter"
+          style={{ fontSize: '18px', minHeight: '44px', maxHeight: '120px' }}
+          rows={1}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+          }}
+        />
       </div>
     </div>
   );
