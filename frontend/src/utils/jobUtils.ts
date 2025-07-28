@@ -47,16 +47,18 @@ export function pollJobStatus(
       
       if (status.status === 'completed') {
         clearInterval(pollInterval);
+        clearTimeout(timeoutId); // Clear the timeout when completed
         onComplete();
       }
     } catch (error) {
       clearInterval(pollInterval);
+      clearTimeout(timeoutId); // Clear the timeout on error
       onError(error);
     }
   }, 2000); // Poll every 2 seconds
   
   // Stop polling after 5 minutes
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     clearInterval(pollInterval);
     onError(new Error('Polling timeout'));
   }, 300000);
