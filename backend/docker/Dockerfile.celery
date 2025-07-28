@@ -20,7 +20,7 @@ COPY cache_manager/ ./cache_manager/
 COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
 COPY celery_app.py ./
-COPY code_languages.py ./
+COPY commits_over_time.py ./
 
 # Expose port (if needed)
 EXPOSE 8000

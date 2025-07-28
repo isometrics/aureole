@@ -21,7 +21,7 @@ COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
 COPY api.py ./
 COPY celery_app.py ./
-COPY code_languages.py ./
+COPY commits_over_time.py ./
 
 # Expose the port the app runs on
 EXPOSE 4995
