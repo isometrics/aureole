@@ -26,25 +26,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load chat history on component mount
-  useEffect(() => {
-    loadChatHistory();
-  }, []);
 
-  const loadChatHistory = async () => {
-    try {
-      const response = await fetch('/api/chat?sessionId=default');
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.history.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to load chat history:', error);
-    }
-  };
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -56,11 +38,12 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       timestamp: new Date()
     };
 
-    // Add user message immediately
-    setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
     setError(null);
+
+    // Add user message immediately
+    setMessages(prev => [...prev, userMessage]);
 
     try {
       const response = await fetch('/api/chat', {
@@ -69,8 +52,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: userMessage.content,
-          sessionId: 'default'
+          message: userMessage.content
         }),
       });
 
@@ -86,12 +68,10 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
         timestamp: new Date(data.message.timestamp)
       };
       
-      setMessages(prev => [...prev.slice(0, -1), userMessage, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Chat error:', error);
       setError('Failed to send message. Please try again.');
-      // Remove the user message on error
-      setMessages(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
@@ -125,8 +105,8 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">AI Assistant</h2>
-            <p className="text-sm text-gray-400">Ask me about your data analysis</p>
+            <h2 className="text-lg font-semibold text-white font-inter">AI Assistant</h2>
+            <p className="text-sm text-gray-400 font-inter">Ask me about your data analysis</p>
           </div>
         </div>
       </div>
@@ -140,8 +120,8 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z" />
               </svg>
             </div>
-            <p className="text-gray-400 text-lg mb-2">Welcome to Aureole Chat</p>
-            <p className="text-gray-500 text-sm max-w-md">
+            <p className="text-gray-400 text-lg mb-2 font-inter">Welcome to Aureole Chat</p>
+            <p className="text-gray-500 text-sm max-w-md font-inter">
               I'm here to help you understand your data analysis, explain repository metrics, and guide you through the platform features.
             </p>
           </div>
@@ -154,14 +134,14 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                   message.role === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-[#292929] text-gray-100'
+                    ? 'bg-[#292929] text-white'
+                    : 'bg-[#1D1D1D] text-gray-100'
                 }`}
               >
-                <div className="text-sm leading-relaxed">
+                <div className="text-sm leading-relaxed font-inter" style={{ fontSize: '18px' }}>
                   {formatMessageContent(message.content)}
                 </div>
-                <div className={`text-xs mt-2 ${
+                <div className={`text-xs mt-2 font-inter ${
                   message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
                 }`}>
                   {message.timestamp.toLocaleTimeString([], { 
@@ -174,21 +154,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
           ))
         )}
         
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-[#292929] rounded-2xl px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-                <span className="text-gray-400 text-sm">Thinking...</span>
-              </div>
-            </div>
-          </div>
-        )}
+
         
         <div ref={messagesEndRef} />
       </div>
@@ -197,7 +163,7 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       {error && (
         <div className="px-6 py-2 flex-shrink-0">
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className="text-red-400 text-sm font-inter" style={{ fontSize: '18px' }}>{error}</p>
           </div>
         </div>
       )}
@@ -212,9 +178,9 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask me anything about your data..."
-              className="w-full bg-[#292929] text-white placeholder-gray-400 rounded-xl px-4 py-3 resize-none border border-[#404040] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+              className="w-full bg-[#292929] text-white placeholder-gray-400 rounded-xl px-4 py-3 resize-none border border-[#404040] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors font-inter"
+              style={{ fontSize: '18px', minHeight: '44px', maxHeight: '120px' }}
               rows={1}
-              style={{ minHeight: '44px', maxHeight: '120px' }}
               onInput={(e) => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
