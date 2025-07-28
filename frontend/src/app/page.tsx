@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import ToggleCircle from "@/components/ToggleCircle";
 import SearchBar from "@/components/SearchBar";
+import ChatInterface from "@/components/ChatInterface";
 
 export default function Home() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -65,7 +66,8 @@ export default function Home() {
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
           <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm">
-            {/* Right card content */}
+            {/* Chat Interface */}
+            <ChatInterface />
           </div>
         </div>
       </div>
