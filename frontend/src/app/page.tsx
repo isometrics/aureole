@@ -56,8 +56,8 @@ export default function Home() {
       </div>
       
       {/* Main content area */}
-      <div className="flex-1 px-4 pb-4">
-        <div className="flex h-full">
+      <div className="flex-1 px-4 pb-4 overflow-hidden">
+        <div className="flex h-full overflow-hidden">
           <div className={`bg-[#1D1D1D] rounded-l-2xl shadow-sm border-r border-[#292929] relative transition-all duration-300 ease-in-out ${
             isCollapsed ? 'w-24' : 'w-[340px]'
           }`} style={{ borderRightWidth: '1px' }}>
@@ -65,7 +65,7 @@ export default function Home() {
             <SearchBar isCollapsed={isCollapsed} onExpand={handleExpand} onJobSubmit={handleJobSubmit} />
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
-          <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm">
+          <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm overflow-hidden">
             {/* Chat Interface */}
             <ChatInterface />
           </div>
