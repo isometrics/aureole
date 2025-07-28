@@ -22,4 +22,4 @@ COPY . .
 EXPOSE 4995
 
 # Default command to run the Flask API
-CMD ["sh", "-c", "source .venv/bin/activate && python api.py"]
+CMD ["uv", "run", "python", "api.py"]
