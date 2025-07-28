@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
 import { extractAllRepoIds, getSelectionSummary } from "@/utils/repoUtils";
+import { submitJobs, pollJobStatus, JobStatus } from "@/utils/jobUtils";
 import Fuse from 'fuse.js';
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
@@ -16,6 +17,7 @@ import DropdownMenu from "./DropdownMenu";
 interface SearchBarProps {
   isCollapsed?: boolean;
   onExpand?: () => void;
+  onJobSubmit?: (loading: boolean) => void;
 }
 
 /**
@@ -23,7 +25,7 @@ interface SearchBarProps {
  * Manages the complete search state including selected tags, dropdown visibility,
  * API data fetching, and user interactions
  */
-export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarProps) {
+export default function SearchBar({ isCollapsed = false, onExpand, onJobSubmit }: SearchBarProps) {
   // Search input value
   const [searchValue, setSearchValue] = useState("");
   
@@ -192,6 +194,47 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     return getSelectionSummary(selectedTags);
   }, [selectedTags]);
 
+  /**
+   * Handle enter key press - send repo_ids to API
+   */
+  const handleEnterKey = async () => {
+    const repoIds = extractAllRepoIds(selectedTags);
+    if (repoIds.length === 0) return;
+    
+    onJobSubmit?.(true);
+    
+    try {
+      const result = await submitJobs(repoIds);
+      console.log('Jobs result:', result);
+      
+      // If status is loading, start polling
+      if (result.status === 'loading') {
+        pollJobStatus(
+          result.job_id,
+          (status: JobStatus) => {
+            console.log('Status update:', status);
+            if (status.job_statuses) {
+              console.log('Individual job statuses:', status.job_statuses);
+            }
+          },
+          () => {
+            onJobSubmit?.(false);
+            console.log('Jobs completed!');
+          },
+          (error) => {
+            console.error('Poll error:', error);
+            onJobSubmit?.(false);
+          }
+        );
+      } else {
+        onJobSubmit?.(false);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      onJobSubmit?.(false);
+    }
+  };
+
   // Log current repo list whenever selection changes
   useEffect(() => {
     const allRepoIds = extractAllRepoIds(selectedTags);
@@ -234,6 +277,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
           selectedTags={selectedTags}
           onInputClick={handleInputClick}
           onInputBlur={handleInputBlur}
+          onEnterKey={handleEnterKey}
         />
       </div>
 

@@ -7,6 +7,7 @@ import SearchBar from "@/components/SearchBar";
 
 export default function Home() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleToggle = (isRotated: boolean) => {
     setIsCollapsed(isRotated);
@@ -14,6 +15,10 @@ export default function Home() {
 
   const handleExpand = () => {
     setIsCollapsed(false);
+  };
+
+  const handleJobSubmit = (loading: boolean) => {
+    setIsLoading(loading);
   };
 
   return (
@@ -39,6 +44,14 @@ export default function Home() {
             Aureole
           </h1>
         </div>
+        
+        {/* Loading Indicator */}
+        {isLoading && (
+          <div className="ml-auto flex items-center gap-2 text-blue-400">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+            <span className="text-sm">Processing...</span>
+          </div>
+        )}
       </div>
       
       {/* Main content area */}
@@ -48,7 +61,7 @@ export default function Home() {
             isCollapsed ? 'w-24' : 'w-[340px]'
           }`} style={{ borderRightWidth: '1px' }}>
             {/* Left card content */}
-            <SearchBar isCollapsed={isCollapsed} onExpand={handleExpand} />
+            <SearchBar isCollapsed={isCollapsed} onExpand={handleExpand} onJobSubmit={handleJobSubmit} />
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
           <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm">

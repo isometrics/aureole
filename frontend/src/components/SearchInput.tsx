@@ -8,6 +8,7 @@ interface SearchInputProps {
   selectedTags: CombinedItem[];
   onInputClick: () => void;
   onInputBlur: () => void;
+  onEnterKey: () => void;
 }
 
 export default function SearchInput({
@@ -15,7 +16,8 @@ export default function SearchInput({
   setSearchValue,
   selectedTags,
   onInputClick,
-  onInputBlur
+  onInputBlur,
+  onEnterKey
 }: SearchInputProps) {
   return (
     <div className="relative h-12 flex items-center px-4">
@@ -38,6 +40,11 @@ export default function SearchInput({
           onInputClick();
         }}
         onBlur={onInputBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onEnterKey();
+          }
+        }}
         placeholder={selectedTags.length === 0 ? "Search for orgs and repos" : "Add more..."}
         className="w-full h-12 pl-9 pr-4 bg-transparent border-none outline-none text-white placeholder-gray-400 font-inter"
       />
