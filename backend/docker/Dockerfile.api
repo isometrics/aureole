@@ -10,13 +10,18 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install uv (Python package manager)
-RUN pip install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install dependencies
 RUN uv sync --frozen
 
-# Copy application code
-COPY . .
+# Copy only necessary application code (avoid copying large files)
+COPY cache_manager/ ./cache_manager/
+COPY db_manager/ ./db_manager/
+COPY utils/ ./utils/
+COPY api.py ./
+COPY celery_app.py ./
+COPY code_languages.py ./
 
 # Expose the port the app runs on
 EXPOSE 4995
