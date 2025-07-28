@@ -1,0 +1,25 @@
+FROM python:3.12-alpine
+
+# Install system dependencies
+RUN apk add --no-cache gcc musl-dev libffi-dev
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install uv (Python package manager)
+RUN pip install uv
+
+# Install dependencies
+RUN uv sync --frozen
+
+# Copy application code
+COPY . .
+
+# Expose port (if needed)
+EXPOSE 8000
+
+# Default command to run Celery worker
+CMD ["uv", "run", "celery", "-A", "celery_app", "worker", "--loglevel=info", "--concurrency=4"]

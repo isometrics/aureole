@@ -32,6 +32,55 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       CACHE_PORT: ${CACHE_PORT}
       CACHE_SCHEMA: ${CACHE_SCHEMA}
+  
+  celery:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.celery
+    env_file:
+      - .env
+    depends_on:
+      - postgres-cache
+      - db_init
+      - redis
+    environment:
+      CACHE_DB_NAME: ${CACHE_DB_NAME}
+      CACHE_HOST: postgres-cache
+      CACHE_USER: ${CACHE_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CACHE_PORT: ${CACHE_PORT}
+      CACHE_SCHEMA: ${CACHE_SCHEMA}
+      REDIS_HOST: redis
+      AUGUR_HOST: 172.17.0.1
+      AUGUR_USERNAME: ${AUGUR_USERNAME}
+      AUGUR_PASSWORD: ${AUGUR_PASSWORD}
+      AUGUR_DATABASE: ${AUGUR_DATABASE}
+      AUGUR_SCHEMA: ${AUGUR_SCHEMA}
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    depends_on:
+      - postgres-cache
+      - redis
+      - db_init
+    environment:
+      CACHE_DB_NAME: ${CACHE_DB_NAME}
+      CACHE_HOST: postgres-cache
+      CACHE_USER: ${CACHE_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CACHE_PORT: ${CACHE_PORT}
+      CACHE_SCHEMA: ${CACHE_SCHEMA}
+      REDIS_HOST: redis
+      AUGUR_HOST: 172.17.0.1
+      AUGUR_USERNAME: ${AUGUR_USERNAME}
+      AUGUR_PASSWORD: ${AUGUR_PASSWORD}
+      AUGUR_DATABASE: ${AUGUR_DATABASE}
+      AUGUR_SCHEMA: ${AUGUR_SCHEMA}
+    ports:
+      - "4995:4995"
+    volumes:
+      - .:/app
 
 volumes:
   postgres_data:

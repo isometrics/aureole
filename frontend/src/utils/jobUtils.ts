@@ -61,7 +61,7 @@ export function pollJobStatus(
   const timeoutId = setTimeout(() => {
     clearInterval(pollInterval);
     onError(new Error('Polling timeout'));
-  }, 300000);
+  }, 3000000);
   
   return pollInterval; // Return interval ID for manual clearing if needed
 } 

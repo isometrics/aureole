@@ -2,9 +2,13 @@ from celery import Celery
 import logging
 import cache_manager.cache_facade as cf
 import time
+from celery import Celery
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 # Create Celery app
-app = Celery('tasks', broker='redis://localhost:6379/0', backend='redis://localhost:6379/0')
+app = Celery('tasks', broker=f'redis://{os.getenv("REDIS_HOST")}:6379/0', backend=f'redis://{os.getenv("REDIS_HOST")}:6379/0')
 
 
 @app.task(
