@@ -289,6 +289,44 @@ def get_task_status():
     return jsonify({"results": results})
 
 
+# Simulate "most relevant graphs" we'll add an embeddings model later
+@app.route('/api/most_relevant_graphs', methods=['POST'])
+def get_most_relevant_graphs():
+    from code_languages import code_languages_graph
+    from commits_domain import commit_domains_graph
+    # Get the repo_ids from the request
+    data = request.get_json()
+    repo_ids = data.get('repo_ids', [])
+
+    # Get the code languages graph
+    code_languages_fig = code_languages_graph(repo_ids, "file")
+
+    # Get the commits domain graph
+    commits_domain_fig = commit_domains_graph(repolist=repo_ids, num=10)
+
+    return jsonify({
+        "code_languages": code_languages_fig,
+        "commits_domain": commits_domain_fig
+    })
+# Make an API route to get the code languages graph
+@app.route('/api/code_languages', methods=['POST'])
+def get_code_languages():
+    from code_languages import code_languages_graph
+    # Get the repo_ids from the request
+    data = request.get_json()
+    repo_ids = data.get('repo_ids', [])
+    fig = code_languages_graph(repo_ids, "file")
+    return jsonify({"graph": fig})
+
+@app.route('/api/commits_domain', methods=['POST'])
+def get_commits_domain():
+    from commits_domain import commit_domains_graph
+    # Get the repo_ids from the request
+    data = request.get_json()
+    repo_ids = data.get('repo_ids', [])
+    fig = commit_domains_graph(repolist=repo_ids, num=10)
+    return jsonify({"graph": fig})
+
 if __name__ == '__main__':
     # Initialize AugurManager
     if initialize_augur_manager():
