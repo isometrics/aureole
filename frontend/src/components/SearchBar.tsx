@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
+import { extractAllRepoIds, getSelectionSummary } from "@/utils/repoUtils";
+import { submitJobs, pollJobStatus, JobStatus } from "@/utils/jobUtils";
+import Fuse from 'fuse.js';
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
 import DropdownMenu from "./DropdownMenu";
@@ -14,6 +17,7 @@ import DropdownMenu from "./DropdownMenu";
 interface SearchBarProps {
   isCollapsed?: boolean;
   onExpand?: () => void;
+  onJobSubmit?: (loading: boolean) => void;
 }
 
 /**
@@ -21,7 +25,7 @@ interface SearchBarProps {
  * Manages the complete search state including selected tags, dropdown visibility,
  * API data fetching, and user interactions
  */
-export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarProps) {
+export default function SearchBar({ isCollapsed = false, onExpand, onJobSubmit }: SearchBarProps) {
   // Search input value
   const [searchValue, setSearchValue] = useState("");
   
@@ -39,6 +43,54 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
   
   // Error state for API failures
   const [error, setError] = useState<string | null>(null);
+
+  // Server-side search with debouncing
+  useEffect(() => {
+    // Only run search when user is actually typing
+    if (!searchValue.trim()) {
+      return; // Don't do anything if no search value
+    }
+
+    const searchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/data?q=${encodeURIComponent(searchValue)}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Search error:', err);
+        setError(err instanceof Error ? err.message : 'Search failed');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const timer = setTimeout(searchData, 800); // 800ms debounce
+    return () => clearTimeout(timer);
+  }, [searchValue]); // Only depend on searchValue, not data or loading
+
+  // Load initial data only once on mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (data) return; // Don't load if we already have data
+      
+      setLoading(true);
+      try {
+        const response = await fetch('/api/data');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []); // Empty dependency array - only runs once on mount
 
   // Handle clicking outside to close dropdown
   useEffect(() => {
@@ -126,6 +178,69 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
     setIsPopupOpen(false);
   };
 
+  /**
+   * Get all unique repo IDs from selected items
+   * This demonstrates how to use the new repo_ids functionality
+   */
+  const getAllSelectedRepoIds = useCallback(() => {
+    return extractAllRepoIds(selectedTags);
+  }, [selectedTags]);
+
+  /**
+   * Get a summary of the current selection
+   * This demonstrates how to use the selection summary utility
+   */
+  const getCurrentSelectionSummary = useCallback(() => {
+    return getSelectionSummary(selectedTags);
+  }, [selectedTags]);
+
+  /**
+   * Handle enter key press - send repo_ids to API
+   */
+  const handleEnterKey = async () => {
+    const repoIds = extractAllRepoIds(selectedTags);
+    if (repoIds.length === 0) return;
+    
+    onJobSubmit?.(true);
+    
+    try {
+      const result = await submitJobs(repoIds);
+      console.log('Jobs result:', result);
+      
+      // If status is loading, start polling
+      if (result.status === 'loading') {
+        pollJobStatus(
+          result.job_id,
+          (status: JobStatus) => {
+            console.log('Status update:', status);
+            if (status.job_statuses) {
+              console.log('Individual job statuses:', status.job_statuses);
+            }
+          },
+          () => {
+            onJobSubmit?.(false);
+            console.log('Jobs completed!');
+          },
+          (error) => {
+            console.error('Poll error:', error);
+            onJobSubmit?.(false);
+          }
+        );
+      } else {
+        onJobSubmit?.(false);
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      onJobSubmit?.(false);
+    }
+  };
+
+  // Log current repo list whenever selection changes
+  useEffect(() => {
+    const allRepoIds = extractAllRepoIds(selectedTags);
+    console.log('Current repo_list =', allRepoIds);
+  }, [selectedTags]);
+
   // If collapsed, show just a circle with magnifying glass
   if (isCollapsed) {
     return (
@@ -162,6 +277,7 @@ export default function SearchBar({ isCollapsed = false, onExpand }: SearchBarPr
           selectedTags={selectedTags}
           onInputClick={handleInputClick}
           onInputBlur={handleInputBlur}
+          onEnterKey={handleEnterKey}
         />
       </div>
 

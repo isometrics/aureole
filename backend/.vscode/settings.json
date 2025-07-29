@@ -1,0 +1,12 @@
+{
+    "python.linting.enabled": false,
+    "python.analysis.diagnosticMode": "off", 
+    "python.analysis.typeCheckingMode": "off",
+    "python.languageServer": "None",
+    "python.analysis.autoImportCompletions": false,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportUndefinedVariable": "none"
+    },
+    "python.defaultInterpreterPath": "./.venv/bin/python"
+} 
