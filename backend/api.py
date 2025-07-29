@@ -228,30 +228,25 @@ def run_tasks():
     data = request.get_json()
     repo_ids = data.get('repo_ids', [])
     
-    # Import all Celery tasks
-    from celery_app import (
-        repo_info_query, affiliation_query,
-        commits_query, contributors_query, issue_assignee_query,
-        issues_query, ossf_score_query, package_version_query,
-        pr_assignee_query, pr_response_query,
-        prs_query, repo_releases_query, repo_languages_query
-    )
+    # Import the generic task
+    from celery_app import generic_query_task
     
-    # Execute all tasks
-    all_tasks = [
-        repo_info_query, affiliation_query,
-        commits_query, contributors_query, issue_assignee_query,
-        issues_query, ossf_score_query, package_version_query,
-        pr_assignee_query, pr_response_query,
-        prs_query, repo_releases_query, repo_languages_query
+    # Define all task names
+    all_task_names = [
+        'repo_info', 'affiliation', 'commits',
+        'contributors', 'issue_assignee', 'issues',
+        'ossf_score', 'package_version', 'pr_assignee',
+        'pr_response', 'prs', 'repo_releases', 'repo_languages'
     ]
     
+    # Execute all tasks using the generic task
     results = []
-    for task in all_tasks:
-        task_result = task.delay(repo_ids)
+    for task_name in all_task_names:
+        task_result = generic_query_task.delay(task_name, repo_ids)
         results.append({
             "job_id": task_result.id,
-            "status": "queued"
+            "status": "queued",
+            "task_name": task_name
         })
     
     return jsonify({

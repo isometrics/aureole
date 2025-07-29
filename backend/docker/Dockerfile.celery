@@ -19,6 +19,7 @@ RUN uv sync --frozen
 COPY cache_manager/ ./cache_manager/
 COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
+COPY queries/ ./queries/
 COPY celery_app.py ./
 COPY commits_over_time.py ./
 

@@ -100,3 +100,7 @@ def create_figure(df_created: pd.DataFrame, interval):
     )
 
     return fig
+
+if __name__ == "__main__":
+    graph = commits_over_time_graph(repolist=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], interval="M")
+    
