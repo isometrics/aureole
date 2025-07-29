@@ -2,7 +2,6 @@ import pandas as pd
 import logging
 import plotly.express as px
 from utils.graph_utils import get_graph_time_values, color_seq
-from celery_app import commits_query as cmq
 from utils.job_utils import nodata_graph
 import time
 import cache_manager.cache_facade as cf
@@ -15,7 +14,7 @@ def commits_over_time_tool(repolist, interval="M"):
 
 def commits_over_time_graph(repolist, interval="M"):
     # wait for data to asynchronously download and become available.
-    while not_cached := cf.get_uncached(func_name=cmq.__name__, repolist=repolist):
+    while not_cached := cf.get_uncached(func_name="commits", repolist=repolist):
         logging.warning(f"COMMITS_OVER_TIME_VIZ - WAITING ON DATA TO BECOME AVAILABLE")
         time.sleep(0.5)
 
@@ -25,7 +24,7 @@ def commits_over_time_graph(repolist, interval="M"):
 
     # GET ALL DATA FROM POSTGRES CACHE
     df = cf.retrieve_from_cache(
-        tablename=cmq.__name__,
+        tablename="commits_query",
         repolist=repolist,
     )
 
@@ -100,7 +99,4 @@ def create_figure(df_created: pd.DataFrame, interval):
     )
 
     return fig
-
-if __name__ == "__main__":
-    graph = commits_over_time_graph(repolist=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], interval="M")
     

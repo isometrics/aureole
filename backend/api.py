@@ -294,6 +294,16 @@ def get_commits_over_time():
        
     return jsonify({"graph": str_fig})
 
+@app.route('/api/commits_over_time_graph', methods=['POST'])
+def get_commits_over_time_graph():
+    from commits_over_time import commits_over_time_graph
+    data = request.get_json()
+    repo_ids = data.get('repo_ids', [])
+    fig = commits_over_time_graph(repo_ids, "M")
+    data_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
+    return jsonify({"graph": data_html})
+
+
 if __name__ == '__main__':
     # Initialize AugurManager
     if initialize_augur_manager():
