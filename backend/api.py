@@ -283,20 +283,9 @@ def get_task_status():
     
     return jsonify({"results": results})
 
-@app.route('/api/commits_over_time', methods=['POST'])
-def get_commits_over_time():
-    from commits_over_time import commits_over_time_graph
-    data = request.get_json()
-    repo_ids = data.get('repo_ids', [])
-    fig = commits_over_time_graph(repo_ids, "M").to_dict()
-    
-    str_fig = str(fig)
-       
-    return jsonify({"graph": str_fig})
-
 @app.route('/api/commits_over_time_graph', methods=['POST'])
 def get_commits_over_time_graph():
-    from commits_over_time import commits_over_time_graph
+    from api.commits_over_time import commits_over_time_graph
     data = request.get_json()
     repo_ids = data.get('repo_ids', [])
     fig = commits_over_time_graph(repo_ids, "M")

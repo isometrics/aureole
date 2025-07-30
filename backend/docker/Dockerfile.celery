@@ -21,7 +21,7 @@ COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
 COPY queries/ ./queries/
 COPY celery_app.py ./
-COPY commits_over_time.py ./
+COPY api/ ./api/
 
 # Expose port (if needed)
 EXPOSE 8000
