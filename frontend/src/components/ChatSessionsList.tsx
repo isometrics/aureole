@@ -38,37 +38,62 @@ export default function ChatSessionsList({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* New Chat Button */}
-      <div className="px-6 pt-4 pb-2">
-        <button
-          onClick={onNewSession}
-          className="w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#252525] rounded-lg transition-all flex items-center gap-2 font-inter text-sm"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-          New chat
-        </button>
-      </div>
-
-      {/* Chats Section */}
-      <div className="flex-1 overflow-y-auto px-6">
-        <div className="text-xs text-gray-400 font-medium mb-2 mt-4 font-inter">
-          Chats
-        </div>
+    <>
+      <style jsx>{`
+        @keyframes rainbow-flow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
         
-        {sessions.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm font-inter mt-4">
-            No conversations yet
+        .rainbow-gradient {
+          background: linear-gradient(
+            120deg,
+            #e500ff,
+            #ff0080,
+            #ff0040,
+            #ff8c00,
+            #ffd700,
+            #00ff88,
+            #00ffff,
+            #0080ff,
+            #5000ff,
+            #e500ff
+          );
+          background-size: 300% 300%;
+          animation: rainbow-flow 3s ease infinite;
+        }
+      `}</style>
+      <div className="flex flex-col h-full">
+      {/* Chats Section */}
+      <div className="flex-1 overflow-y-auto pt-4">
+        <div className="px-6">
+          {/* New Chat Button */}
+          <button
+            onClick={onNewSession}
+            className="w-full px-2 py-1.5 text-gray-300 hover:text-white rounded-full transition-all flex items-center justify-center gap-2 font-inter mb-2 relative overflow-hidden group"
+          >
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity duration-300 rainbow-gradient blur-xl" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 rainbow-gradient" />
+            <span className="relative z-10">+ New Chat</span>
+          </button>
+          
+          {/* Chats label */}
+          <div className="text-xs text-gray-400 font-medium mt-4 mb-2 font-inter">
+            Chats
           </div>
-        ) : (
-          <div className="space-y-1">
+          
+          {sessions.length === 0 ? (
+            <div className="text-center text-gray-500 font-inter mt-8">
+              No conversations yet
+            </div>
+          ) : (
+            <div className="space-y-1.5">
             {sessions.map((session) => (
               <button
                 key={session.id}
                 onClick={() => onSessionSelect(session.id)}
-                className={`w-full px-3 py-2 rounded-lg text-left transition-all font-inter text-sm ${
+                className={`w-full px-2 py-2 rounded-lg text-left transition-all font-inter ${
                   currentSessionId === session.id
                     ? 'bg-[#292929] text-white'
                     : 'text-gray-300 hover:bg-[#252525] hover:text-white'
@@ -81,7 +106,9 @@ export default function ChatSessionsList({
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
+    </>
   );
 }
