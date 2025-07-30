@@ -61,21 +61,25 @@ export default function ChatSessionsList({
   };
 
   const handleDelete = (sessionId: string) => {
-    if (confirm('Are you sure you want to delete this chat?')) {
-      const savedSessions = localStorage.getItem('chatSessions');
-      if (savedSessions) {
-        const sessionsArray = JSON.parse(savedSessions);
-        const filteredSessions = sessionsArray.filter((s: any) => s.id !== sessionId);
-        localStorage.setItem('chatSessions', JSON.stringify(filteredSessions));
-        
-        // If we're deleting the current session, create a new one
-        if (sessionId === currentSessionId) {
-          onNewSession();
-        }
-        
-        window.dispatchEvent(new Event('sessionsUpdated'));
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (!savedSessions) return;
+    
+    const sessionsArray = JSON.parse(savedSessions);
+    const filteredSessions = sessionsArray.filter((s: any) => s.id !== sessionId);
+    localStorage.setItem('chatSessions', JSON.stringify(filteredSessions));
+    
+    // If we're deleting the current session
+    if (sessionId === currentSessionId) {
+      if (filteredSessions.length > 0) {
+        // Switch to the first remaining session
+        onSessionSelect(filteredSessions[0].id);
+      } else {
+        // No sessions left, create a new one
+        onNewSession();
       }
     }
+    
+    window.dispatchEvent(new Event('sessionsUpdated'));
   };
 
   const startEditing = (sessionId: string, currentTitle: string) => {
