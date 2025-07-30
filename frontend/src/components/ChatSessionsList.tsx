@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ChatMessage {
   id: string;
@@ -31,11 +31,64 @@ export default function ChatSessionsList({
   onNewSession,
   sessions 
 }: ChatSessionsListProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
   
   const truncateTitle = (title: string, maxLength: number = 30) => {
     if (title.length <= maxLength) return title;
     return title.substring(0, maxLength) + '...';
   };
+
+  const handleRename = (sessionId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      const sessionsArray = JSON.parse(savedSessions);
+      const sessionIndex = sessionsArray.findIndex((s: any) => s.id === sessionId);
+      
+      if (sessionIndex !== -1) {
+        sessionsArray[sessionIndex].title = newTitle.trim();
+        localStorage.setItem('chatSessions', JSON.stringify(sessionsArray));
+        window.dispatchEvent(new Event('sessionsUpdated'));
+      }
+    }
+    
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const handleDelete = (sessionId: string) => {
+    if (confirm('Are you sure you want to delete this chat?')) {
+      const savedSessions = localStorage.getItem('chatSessions');
+      if (savedSessions) {
+        const sessionsArray = JSON.parse(savedSessions);
+        const filteredSessions = sessionsArray.filter((s: any) => s.id !== sessionId);
+        localStorage.setItem('chatSessions', JSON.stringify(filteredSessions));
+        
+        // If we're deleting the current session, create a new one
+        if (sessionId === currentSessionId) {
+          onNewSession();
+        }
+        
+        window.dispatchEvent(new Event('sessionsUpdated'));
+      }
+    }
+  };
+
+  const startEditing = (sessionId: string, currentTitle: string) => {
+    setEditingId(sessionId);
+    setEditingTitle(currentTitle);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.select();
+    }
+  }, [editingId]);
 
   return (
     <>
@@ -90,19 +143,70 @@ export default function ChatSessionsList({
           ) : (
             <div className="space-y-1.5">
             {sessions.map((session) => (
-              <button
+              <div
                 key={session.id}
-                onClick={() => onSessionSelect(session.id)}
-                className={`w-full px-2 py-2 rounded-lg text-left transition-all font-inter ${
+                className={`group relative rounded-lg ${
                   currentSessionId === session.id
-                    ? 'bg-[#292929] text-white'
-                    : 'text-gray-300 hover:bg-[#252525] hover:text-white'
+                    ? 'bg-[#292929]'
+                    : 'hover:bg-[#252525]'
                 }`}
+                onMouseEnter={() => setHoveredId(session.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
-                <div className="truncate">
-                  {truncateTitle(session.title)}
-                </div>
-              </button>
+                {editingId === session.id ? (
+                  <input
+                    ref={editInputRef}
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={() => handleRename(session.id, editingTitle)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRename(session.id, editingTitle);
+                      } else if (e.key === 'Escape') {
+                        setEditingId(null);
+                        setEditingTitle('');
+                      }
+                    }}
+                    className="w-full px-2 py-2 bg-[#1A1A1A] text-white rounded-lg outline-none border border-gray-500 font-inter"
+                  />
+                ) : (
+                  <div className={`w-full px-2 py-2 rounded-lg transition-all font-inter flex items-center justify-between ${
+                    currentSessionId === session.id
+                      ? 'text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}>
+                    <button
+                      onClick={() => onSessionSelect(session.id)}
+                      className="flex-1 text-left truncate"
+                    >
+                      {truncateTitle(session.title)}
+                    </button>
+                    {(hoveredId === session.id || currentSessionId === session.id) && (
+                      <div className="flex items-center gap-1 ml-2">
+                        <button
+                          onClick={() => startEditing(session.id, session.title)}
+                          className="p-1 hover:bg-[#404040] rounded transition-colors"
+                          title="Rename"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDelete(session.id)}
+                          className="p-1 hover:bg-[#404040] rounded transition-colors"
+                          title="Delete"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         )}
