@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import Plot from 'react-plotly.js';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Plot component with SSR disabled
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 interface ChatMessage {
   id: string;
@@ -11,11 +14,20 @@ interface ChatMessage {
   plotlyGraphs?: any[]; // Array of Plotly JSON objects
 }
 
-interface ChatInterfaceProps {
-  className?: string;
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
+interface ChatInterfaceProps {
+  className?: string;
+  sessionId?: string;
+}
+
+export default function ChatInterface({ className = "", sessionId }: ChatInterfaceProps) {
   // Sample assistant message with Plotly graphs
   const sampleAssistantMessage: ChatMessage = {
     id: 'assistant-sample-1',
@@ -79,13 +91,111 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
     ]
   };
 
-  const [messages, setMessages] = useState<ChatMessage[]>([sampleAssistantMessage]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+
+  // Helper function to get all sessions
+  const getSessions = (): ChatSession[] => {
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      try {
+        return JSON.parse(savedSessions);
+      } catch (error) {
+        console.error('Error parsing sessions:', error);
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to save sessions
+  const saveSessions = (sessions: ChatSession[]) => {
+    try {
+      localStorage.setItem('chatSessions', JSON.stringify(sessions));
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new Event('sessionsUpdated'));
+    } catch (error) {
+      console.error('Error saving sessions:', error);
+    }
+  };
+
+  // Helper function to generate title from first user message
+  const generateTitle = (messages: ChatMessage[]): string => {
+    const firstUserMessage = messages.find(m => m.role === 'user');
+    if (firstUserMessage) {
+      const content = firstUserMessage.content;
+      return content.length > 50 ? content.substring(0, 50) + '...' : content;
+    }
+    return 'New Chat';
+  };
+
+  // Load or create session when sessionId changes
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const sessions = getSessions();
+    let session = sessions.find(s => s.id === sessionId);
+
+    if (!session) {
+      // Create new session
+      session = {
+        id: sessionId,
+        title: 'New Chat',
+        messages: [sampleAssistantMessage],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      sessions.unshift(session);
+      saveSessions(sessions);
+    } else {
+      // Convert date strings back to Date objects
+      session.messages = session.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      session.createdAt = new Date(session.createdAt);
+      session.updatedAt = new Date(session.updatedAt);
+    }
+
+    setCurrentSession(session);
+    setMessages(session.messages);
+    setExpandedGraphs(new Set()); // Reset expanded graphs when switching sessions
+  }, [sessionId]);
+
+  // Save messages to current session whenever they change
+  useEffect(() => {
+    if (!currentSession || messages.length === 0) return;
+
+    const sessions = getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === currentSession.id);
+    
+    if (sessionIndex !== -1) {
+      // Check if messages actually changed (not just loaded)
+      const oldMessages = sessions[sessionIndex].messages;
+      const hasNewMessages = messages.length !== oldMessages.length;
+      
+      sessions[sessionIndex] = {
+        ...currentSession,
+        messages: messages,
+        title: generateTitle(messages),
+        updatedAt: hasNewMessages ? new Date() : new Date(sessions[sessionIndex].updatedAt)
+      };
+      
+      // Only move to top if there are new messages
+      if (hasNewMessages && sessionIndex !== 0) {
+        const updatedSession = sessions.splice(sessionIndex, 1)[0];
+        sessions.unshift(updatedSession);
+      }
+      
+      saveSessions(sessions);
+    }
+  }, [messages, currentSession]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -171,6 +281,8 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
       return newSet;
     });
   };
+
+
 
   return (
     <div className={`flex flex-col h-full overflow-hidden max-h-full ${className}`}>
