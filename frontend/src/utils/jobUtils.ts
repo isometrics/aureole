@@ -33,6 +33,7 @@ export async function checkJobStatus(jobId: string): Promise<JobStatus> {
 
 /**
  * Poll job status until completion
+ * @deprecated Use subscribeToJobStatus from websocketUtils instead for real-time updates
  */
 export function pollJobStatus(
   jobId: string, 

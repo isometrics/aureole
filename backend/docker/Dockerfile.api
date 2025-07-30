@@ -19,9 +19,10 @@ RUN uv sync --frozen
 COPY cache_manager/ ./cache_manager/
 COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
+COPY queries/ ./queries/
 COPY api.py ./
 COPY celery_app.py ./
-COPY commits_over_time.py ./
+COPY api/ ./api/
 
 # Expose the port the app runs on
 EXPOSE 4995

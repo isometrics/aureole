@@ -37,7 +37,7 @@ from .cx_common import db_cx_string, env_augur_schema, cache_cx_string
 def cache_query_results(
     db_connection_string: str,
     query: str,
-    vars: tuple[tuple],
+    vars: dict,
     target_table: str,
     bookkeeping_data: tuple[dict],
     server_pagination=2000,
@@ -49,7 +49,7 @@ def cache_query_results(
     Args:
         db_connection_string (str): _description_
         query (str): _description_
-        vars (tuple(tuple)): _description_
+        vars (dict): Named parameters for the query
         target_table (str): _description_
         bookkeeping_data (tuple(dict)): _description_
         server_pagination (int, optional): _description_. Defaults to 2000.
@@ -66,7 +66,7 @@ def cache_query_results(
 
             logging.warning(f"{target_table} -- CQR EXECUTING QUERY")
 
-            # execute query
+            # execute query with named parameters
             augur_cur.execute(query, vars)
 
             logging.warning(f"{target_table} -- CQR STARTING TRANSACTION")
@@ -152,7 +152,7 @@ def get_uncached(func_name: str, repolist: list[int]) -> list[int]:  # or None
             return not_cached
 
 
-def caching_wrapper(func_name: str, query: str, repolist: list[int], n_repolist_uses=1) -> None:
+def caching_wrapper(func_name: str, query: str, repolist: list[int]) -> None:
     """Combines steps of (1) identifying which repos aren't already cached and
     (2) querying + caching repos those repos.
 
@@ -160,8 +160,6 @@ def caching_wrapper(func_name: str, query: str, repolist: list[int], n_repolist_
         func_name (str): literal name of querying function for bookkeeping
         query (str): sql query as a string
         repolist (list[int]): list of repos requested by user.
-        n_repolist_uses (int): if the repolist is used more than once in the query, simply inject it again.
-                                TODO: remove this hack and parameterize queries by name
 
     Raises:
         Exception: If a step fails, will print exception and re-raise.
@@ -179,17 +177,13 @@ def caching_wrapper(func_name: str, query: str, repolist: list[int], n_repolist_
         else:
             logging.warning(f"{func_name} COLLECTION - CACHING {len(uncached_repos)} NEW REPOS")
 
-            # inject the repolist multiple times because the SQL uses it more
-            # than once and the wildcard %s are ordered.
-            uncached_repos: tuple[tuple] = tuple([tuple(uncached_repos) for _ in range(n_repolist_uses)])
-
         # STEP 2: Query for those repos
         logging.warning(f"{func_name} COLLECTION - EXECUTING CACHING QUERY")
         cache_query_results(
             db_connection_string=db_cx_string,
             query=query,
-            vars=uncached_repos,
-            target_table=func_name,
+            vars={'repo_ids': uncached_repos},
+            target_table=f"{func_name}_query",
             bookkeeping_data=tuple({"cache_func": func_name, "repo_id": r} for r in repolist),
         )
     except Exception as e:

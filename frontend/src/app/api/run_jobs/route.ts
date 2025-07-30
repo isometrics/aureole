@@ -1,8 +1,58 @@
 import { NextResponse } from 'next/server';
+import { broadcastJobUpdate } from '../websocket/route';
 
 // Simple in-memory storage for job requests
 // In production, this would be a database table
-const jobRequests = new Map<string, { repo_ids: number[], timestamp: number, status: string, job_ids?: string[] }>();
+const jobRequests = new Map<string, { repo_ids: number[], timestamp: number, status: string, job_ids?: string[], pollInterval?: NodeJS.Timeout }>();
+
+// Background polling mechanism to check job status every 10 seconds
+async function pollJobStatusFromBackend(jobId: string, backendJobIds: string[]) {
+  const intervalId = setInterval(async () => {
+    try {
+      const statusResponse = await fetch('http://localhost:4995/api/task_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_ids: backendJobIds })
+      });
+      
+      if (!statusResponse.ok) {
+        console.error(`Failed to check job status: ${statusResponse.status}`);
+        return;
+      }
+      
+      const statusResult = await statusResponse.json();
+      const allCompleted = statusResult.results?.every((r: any) => r.status === 'SUCCESS') || false;
+      
+      // Update job request status
+      const jobRequest = jobRequests.get(jobId);
+      if (jobRequest) {
+        if (allCompleted) {
+          jobRequest.status = 'completed';
+          clearInterval(intervalId); // Stop polling when completed
+          jobRequests.set(jobId, { ...jobRequest, pollInterval: undefined });
+        }
+        
+        // Broadcast status update via WebSocket/SSE
+        broadcastJobUpdate(jobId, {
+          status: allCompleted ? 'completed' : 'loading',
+          job_id: jobId,
+          job_statuses: statusResult.results,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Stop polling if job is completed or no longer tracked
+      if (allCompleted || !jobRequests.has(jobId)) {
+        clearInterval(intervalId);
+      }
+    } catch (error) {
+      console.error('Error polling job status:', error);
+      // Continue polling even if there's an error
+    }
+  }, 10000); // Poll every 10 seconds
+  
+  return intervalId;
+}
 
 export async function POST(request: Request) {
   const data = await request.json();
@@ -42,12 +92,16 @@ export async function POST(request: Request) {
   // Extract job IDs from backend response
   const jobIds = backendResult.results?.map((r: any) => r.job_id) || [];
   
+  // Start background polling for this job
+  const pollInterval = await pollJobStatusFromBackend(requestKey, jobIds);
+  
   // Update status
   jobRequests.set(requestKey, {
     repo_ids: repoIds,
     timestamp: Date.now(),
     status: 'loading', // Keep as loading until we check individual job statuses
-    job_ids: jobIds
+    job_ids: jobIds,
+    pollInterval: pollInterval
   });
   
   return NextResponse.json({
@@ -69,46 +123,12 @@ export async function GET(request: Request) {
   
   const jobRequest = jobRequests.get(jobId)!;
   
-  // If we have job IDs, check their status with the backend
-  if (jobRequest.job_ids && jobRequest.job_ids.length > 0) {
-    try {
-      const statusResponse = await fetch('http://localhost:4995/api/task_status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_ids: jobRequest.job_ids })
-      });
-      
-      const statusResult = await statusResponse.json();
-      
-      // Check if all jobs are completed
-      const allCompleted = statusResult.results?.every((r: any) => r.status === 'SUCCESS') || false;
-      
-      if (allCompleted) {
-        jobRequests.set(jobId, {
-          ...jobRequest,
-          status: 'completed'
-        });
-      }
-      
-      return NextResponse.json({
-        status: allCompleted ? 'completed' : 'loading',
-        job_id: jobId,
-        job_statuses: statusResult.results,
-        timestamp: jobRequest.timestamp
-      });
-    } catch (error) {
-      // If backend is not available, return current status
-      return NextResponse.json({
-        status: jobRequest.status,
-        job_id: jobId,
-        timestamp: jobRequest.timestamp
-      });
-    }
-  }
-  
+  // Return current status (background polling will update this via WebSocket/SSE)
   return NextResponse.json({
     status: jobRequest.status,
     job_id: jobId,
-    timestamp: jobRequest.timestamp
+    job_ids: jobRequest.job_ids,
+    timestamp: jobRequest.timestamp,
+    message: 'Use WebSocket/SSE endpoint for real-time updates: /api/websocket?jobId=' + jobId
   });
 } 

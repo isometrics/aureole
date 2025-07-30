@@ -10,7 +10,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install uv (Python package manager)
-RUN pip install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install dependencies
 RUN uv sync --frozen
@@ -19,8 +19,9 @@ RUN uv sync --frozen
 COPY cache_manager/ ./cache_manager/
 COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
+COPY queries/ ./queries/
 COPY celery_app.py ./
-COPY commits_over_time.py ./
+COPY api/ ./api/
 
 # Expose port (if needed)
 EXPOSE 8000

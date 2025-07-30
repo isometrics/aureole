@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { DataResponse, CombinedItem } from "@/types/api";
 import { extractAllRepoIds, getSelectionSummary } from "@/utils/repoUtils";
-import { submitJobs, pollJobStatus, JobStatus } from "@/utils/jobUtils";
+import { submitJobs, JobStatus } from "@/utils/jobUtils";
+import { subscribeToJobStatus } from "@/utils/websocketUtils";
 import Fuse from 'fuse.js';
 import SearchInput from "./SearchInput";
 import Tags from "./Tags";
@@ -207,9 +208,9 @@ export default function SearchBar({ isCollapsed = false, onExpand, onJobSubmit }
       const result = await submitJobs(repoIds);
       console.log('Jobs result:', result);
       
-      // If status is loading, start polling
+      // If status is loading, start WebSocket connection
       if (result.status === 'loading') {
-        pollJobStatus(
+        subscribeToJobStatus(
           result.job_id,
           (status: JobStatus) => {
             console.log('Status update:', status);
@@ -222,7 +223,7 @@ export default function SearchBar({ isCollapsed = false, onExpand, onJobSubmit }
             console.log('Jobs completed!');
           },
           (error) => {
-            console.error('Poll error:', error);
+            console.error('WebSocket error:', error);
             onJobSubmit?.(false);
           }
         );
