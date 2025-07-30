@@ -9,3 +9,5 @@ Aureole aims to revolutionize how users interact with data visualizations by pro
 
 ### FAQ
 - **Why did you name it Aureole?:** It is named after a place in the anime "Frieren: Beyond Journey's End".
+- **Why is data collection so slow:** Most likely you're only using one celery worker. Increase the amount of workers by running
+`sudo docker compose --build --scale celery=<# of VIRTUAL CPU cores>`
