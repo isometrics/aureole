@@ -1,14 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import ToggleCircle from "@/components/ToggleCircle";
-import SearchBar from "@/components/SearchBar";
+import Sidebar from "@/components/Sidebar";
 import ChatInterface from "@/components/ChatInterface";
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  plotlyJson?: any;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function Home() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
+
+  // Initialize with a session ID on mount
+  useEffect(() => {
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      try {
+        const sessions = JSON.parse(savedSessions);
+        if (sessions.length > 0) {
+          setCurrentSessionId(sessions[0].id);
+        } else {
+          // Create initial session
+          const newSessionId = `session-${Date.now()}`;
+          setCurrentSessionId(newSessionId);
+        }
+      } catch (error) {
+        // Create initial session on error
+        const newSessionId = `session-${Date.now()}`;
+        setCurrentSessionId(newSessionId);
+      }
+    } else {
+      // Create initial session
+      const newSessionId = `session-${Date.now()}`;
+      setCurrentSessionId(newSessionId);
+    }
+  }, []);
 
   const handleToggle = (isRotated: boolean) => {
     setIsCollapsed(isRotated);
@@ -20,6 +62,16 @@ export default function Home() {
 
   const handleJobSubmit = (loading: boolean) => {
     setIsLoading(loading);
+  };
+
+  const handleSessionSelect = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+  };
+
+  const handleNewSession = () => {
+    const newSessionId = `session-${Date.now()}`;
+    setCurrentSessionId(newSessionId);
+    // The ChatInterface will handle creating the actual session
   };
 
   return (
@@ -62,12 +114,19 @@ export default function Home() {
             isCollapsed ? 'w-24' : 'w-[340px]'
           }`} style={{ borderRightWidth: '1px' }}>
             {/* Left card content */}
-            <SearchBar isCollapsed={isCollapsed} onExpand={handleExpand} onJobSubmit={handleJobSubmit} />
+            <Sidebar 
+              isCollapsed={isCollapsed} 
+              onExpand={handleExpand} 
+              onJobSubmit={handleJobSubmit}
+              currentSessionId={currentSessionId}
+              onSessionSelect={handleSessionSelect}
+              onNewSession={handleNewSession}
+            />
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
           <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm overflow-hidden">
             {/* Chat Interface */}
-            <ChatInterface />
+            <ChatInterface sessionId={currentSessionId} />
           </div>
         </div>
       </div>

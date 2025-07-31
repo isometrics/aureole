@@ -9,13 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/plotly.js": "^3.0.3",
     "@types/ws": "^8.18.1",
     "ai": "^4.3.19",
     "fuse.js": "^7.1.0",
     "next": "15.4.3",
     "openai": "^5.10.2",
+    "plotly.js-dist": "^3.0.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-plotly.js": "^2.6.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

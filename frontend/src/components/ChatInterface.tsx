@@ -1,25 +1,201 @@
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import Plot component with SSR disabled
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  plotlyGraphs?: any[]; // Array of Plotly JSON objects
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface ChatInterfaceProps {
   className?: string;
+  sessionId?: string;
 }
 
-export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
+export default function ChatInterface({ className = "", sessionId }: ChatInterfaceProps) {
+  // Sample assistant message with Plotly graphs
+  const sampleAssistantMessage: ChatMessage = {
+    id: 'assistant-sample-1',
+    role: 'assistant',
+    content: 'Here are some data visualizations to help you understand the repository metrics:',
+    timestamp: new Date(),
+    plotlyGraphs: [
+      {
+        data: [
+          {
+            x: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            y: [120, 145, 130, 165, 185, 195],
+            type: 'scatter',
+            mode: 'lines+markers',
+            name: 'Commits Over Time',
+            line: { color: '#3B82F6', width: 2 },
+            marker: { size: 6 }
+          }
+        ],
+        layout: {
+          title: 'Repository Activity - Commits per Month',
+          xaxis: { title: 'Month' },
+          yaxis: { title: 'Number of Commits' },
+          height: 350
+        }
+      },
+      {
+        data: [
+          {
+            labels: ['JavaScript', 'TypeScript', 'Python', 'CSS', 'Other'],
+            values: [35, 30, 20, 10, 5],
+            type: 'pie',
+            marker: {
+              colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+            }
+          }
+        ],
+        layout: {
+          title: 'Language Distribution',
+          height: 350
+        }
+      },
+      {
+        data: [
+          {
+            x: ['Issues Created', 'Issues Closed', 'PRs Merged', 'PRs Open'],
+            y: [45, 38, 52, 12],
+            type: 'bar',
+            marker: {
+              color: ['#EF4444', '#10B981', '#3B82F6', '#F59E0B']
+            }
+          }
+        ],
+        layout: {
+          title: 'Repository Statistics',
+          xaxis: { title: 'Metric Type' },
+          yaxis: { title: 'Count' },
+          height: 350
+        }
+      }
+    ]
+  };
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+
+  // Helper function to get all sessions
+  const getSessions = (): ChatSession[] => {
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      try {
+        return JSON.parse(savedSessions);
+      } catch (error) {
+        console.error('Error parsing sessions:', error);
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to save sessions
+  const saveSessions = (sessions: ChatSession[]) => {
+    try {
+      localStorage.setItem('chatSessions', JSON.stringify(sessions));
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new Event('sessionsUpdated'));
+    } catch (error) {
+      console.error('Error saving sessions:', error);
+    }
+  };
+
+  // Helper function to generate title from first user message
+  const generateTitle = (messages: ChatMessage[]): string => {
+    const firstUserMessage = messages.find(m => m.role === 'user');
+    if (firstUserMessage) {
+      const content = firstUserMessage.content;
+      return content.length > 50 ? content.substring(0, 50) + '...' : content;
+    }
+    return 'New Chat';
+  };
+
+  // Load or create session when sessionId changes
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const sessions = getSessions();
+    let session = sessions.find(s => s.id === sessionId);
+
+    if (!session) {
+      // Create new session
+      session = {
+        id: sessionId,
+        title: 'New Chat',
+        messages: [sampleAssistantMessage],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      sessions.unshift(session);
+      saveSessions(sessions);
+    } else {
+      // Convert date strings back to Date objects
+      session.messages = session.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      session.createdAt = new Date(session.createdAt);
+      session.updatedAt = new Date(session.updatedAt);
+    }
+
+    setCurrentSession(session);
+    setMessages(session.messages);
+    setExpandedGraphs(new Set()); // Reset expanded graphs when switching sessions
+  }, [sessionId]);
+
+  // Save messages to current session whenever they change
+  useEffect(() => {
+    if (!currentSession || messages.length === 0) return;
+
+    const sessions = getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === currentSession.id);
+    
+    if (sessionIndex !== -1) {
+      // Check if messages actually changed (not just loaded)
+      const oldMessages = sessions[sessionIndex].messages;
+      const hasNewMessages = messages.length !== oldMessages.length;
+      
+      sessions[sessionIndex] = {
+        ...currentSession,
+        messages: messages,
+        title: generateTitle(messages),
+        updatedAt: hasNewMessages ? new Date() : new Date(sessions[sessionIndex].updatedAt)
+      };
+      
+      // Only move to top if there are new messages
+      if (hasNewMessages && sessionIndex !== 0) {
+        const updatedSession = sessions.splice(sessionIndex, 1)[0];
+        sessions.unshift(updatedSession);
+      }
+      
+      saveSessions(sessions);
+    }
+  }, [messages, currentSession]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -94,6 +270,20 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
     ));
   };
 
+  const toggleGraphs = (messageId: string) => {
+    setExpandedGraphs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  };
+
+
+
   return (
     <div className={`flex flex-col h-full overflow-hidden max-h-full ${className}`}>
       {/* Chat Header */}
@@ -127,29 +317,68 @@ export default function ChatInterface({ className = "" }: ChatInterfaceProps) {
           </div>
         ) : (
           messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-[#292929] text-white'
-                    : 'bg-[#1D1D1D] text-gray-100'
-                }`}
-              >
-                <div className="text-sm leading-relaxed font-inter" style={{ fontSize: '18px' }}>
-                  {formatMessageContent(message.content)}
-                </div>
-                <div className={`text-xs mt-2 font-inter ${
-                  message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {message.timestamp.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+            <div key={message.id} className="w-full">
+              {/* Message bubble */}
+              <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === 'user'
+                      ? 'bg-[#292929] text-white'
+                      : 'bg-[#1D1D1D] text-gray-100'
+                  }`}
+                >
+                  <div className="text-sm leading-relaxed font-inter" style={{ fontSize: '18px' }}>
+                    {formatMessageContent(message.content)}
+                  </div>
+                  <div className={`text-xs mt-2 font-inter ${
+                    message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+                  }`}>
+                    {message.timestamp.toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </div>
                 </div>
               </div>
+              
+              {/* Graphs dropdown - only for assistant messages */}
+              {message.role === 'assistant' && message.plotlyGraphs && message.plotlyGraphs.length > 0 && (
+                <div className="mt-3 w-full">
+                  <div className="ml-4">
+                    <button
+                      onClick={() => toggleGraphs(message.id)}
+                      className="text-xs px-3 py-1 rounded-full transition-colors font-inter bg-[#2D2D2D] text-gray-300 hover:bg-[#3D3D3D]"
+                    >
+                      {expandedGraphs.has(message.id) ? 'Hide Graphs' : `Show Graphs (${message.plotlyGraphs.length})`}
+                    </button>
+                  </div>
+                  
+                  {/* Graphs container */}
+                  {expandedGraphs.has(message.id) && (
+                    <div className="mt-3 ml-4 w-full space-y-4">
+                      {message.plotlyGraphs.map((graph, index) => (
+                        <div key={index} className="border border-[#404040] rounded-lg p-3 bg-[#1A1A1A] w-full">
+                          <Plot
+                            data={graph.data || []}
+                            layout={{
+                              ...graph.layout,
+                              autosize: true,
+                              margin: { l: 50, r: 50, t: 50, b: 50 },
+                              paper_bgcolor: 'rgba(0,0,0,0)',
+                              plot_bgcolor: 'rgba(0,0,0,0)',
+                              font: { color: '#ffffff' },
+                              ...graph.layout
+                            }}
+                            config={{ responsive: true, displayModeBar: false }}
+                            style={{ width: '100%', height: '400px' }}
+                            useResizeHandler={true}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}
