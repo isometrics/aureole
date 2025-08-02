@@ -62,19 +62,14 @@ def get_all_data():
     Get all repositories and organizations in a well-formatted structure for client-side processing.
     This is similar to the client-side cache approach used in the main 8Knot application.
     
-    Query parameters:
-    - include_metadata: Include metadata about the dataset (default: true)
-    
     Returns:
-    - Complete dataset with repositories, organizations, combined list, and metadata
+    - Complete dataset with repositories, organizations, and combined list
     - Each repository includes repo_ids with a single repo ID
     - Each organization includes repo_ids with a list of repo IDs for all repos in that org
     """
     try:
         if augur_manager is None:
             return jsonify({"error": "AugurManager not initialized"}), 500
-        
-        include_metadata = request.args.get('include_metadata', 'true').lower() == 'true'
         
         # Get all available options
         options = augur_manager.get_multiselect_options().copy()
@@ -139,88 +134,11 @@ def get_all_data():
                 "repo_ids": org["repo_ids"]
             })
         
-        # Add metadata if requested
-        if include_metadata:
-            # Calculate total unique repo IDs across all items
-            all_repo_ids = set()
-            for repo in repos:
-                all_repo_ids.update(repo["repo_ids"])
-            for org in orgs:
-                all_repo_ids.update(org["repo_ids"])
-            
-            metadata = {
-                "total_repositories": len(repos),
-                "total_organizations": len(orgs),
-                "total_items": len(repos) + len(orgs),
-                "total_unique_repo_ids": len(all_repo_ids),
-                "last_updated": augur_manager.get_last_update_time() if hasattr(augur_manager, 'get_last_update_time') else None,
-                "dataset_info": {
-                    "description": "Complete dataset of repositories and organizations with repo_ids for client-side processing",
-                    "usage": "Use this data for client-side fuzzy search and filtering. Each item includes repo_ids field with individual repo ID for repos or list of repo IDs for organizations.",
-                    "recommended_client_libraries": ["rapidfuzz", "fuse.js", "fuse.js"]
-                }
-            }
-            response_data["metadata"] = metadata
-        
         return jsonify(response_data)
         
     except Exception as e:
         logging.error(f"Error in get_all_data endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/convert', methods=['POST'])
-def convert_selections():
-    """
-    Convert selected values to repo IDs, similar to multiselect_values_to_repo_ids.
-    
-    Request body:
-    - selections: List of selected values (repo IDs and org names)
-    
-    Returns:
-    - List of repo IDs that correspond to the selections
-    """
-    try:
-        if augur_manager is None:
-            return jsonify({"error": "AugurManager not initialized"}), 500
-        
-        data = request.get_json()
-        if not data or 'selections' not in data:
-            return jsonify({"error": "Request body must contain 'selections' array"}), 400
-        
-        selections = data['selections']
-        if not isinstance(selections, list):
-            return jsonify({"error": "Selections must be an array"}), 400
-        
-        # Separate repos and orgs
-        repo_ids = [r for r in selections if isinstance(r, int)]
-        org_names = [n for n in selections if isinstance(n, str)]
-        
-        # Get repo IDs from orgs
-        org_repo_ids = []
-        for org_name in org_names:
-            if augur_manager.is_org(org_name):
-                org_repos = augur_manager.org_to_repos(org_name)
-                org_repo_ids.extend(org_repos)
-        
-        # Combine all repo IDs and remove duplicates
-        all_repo_ids = list(set(repo_ids + org_repo_ids))
-        
-        return jsonify({
-            "repo_ids": all_repo_ids,
-            "metadata": {
-                "input_selections": selections,
-                "repo_selections": repo_ids,
-                "org_selections": org_names,
-                "org_repo_ids": org_repo_ids,
-                "total_repos": len(all_repo_ids)
-            }
-        })
-        
-    except Exception as e:
-        logging.error(f"Error in convert_selections endpoint: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/run_tasks', methods=['POST'])
 def run_tasks():
