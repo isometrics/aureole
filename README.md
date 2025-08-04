@@ -8,7 +8,8 @@ Provide intelligent, conversational assistance within the 8Knot platform. Our go
 ### Running
 
 **Backend**:
-Listens on localhost:4995. You can start it up by doing `cd backend` and then `docker compose up --build --scale celery=10`
+You can start it up by doing `cd backend` and then `docker compose up --build --scale celery=10`
+The application will listen on localhost:4995. It will be mostly called by Next.JS frontend.
 
 **Frontend**:
 The Frontend is a Next.js Application. You can start it up by doing `cd frontend` and then `npm install && npm run dev`
