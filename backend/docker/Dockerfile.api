@@ -20,12 +20,12 @@ COPY cache_manager/ ./cache_manager/
 COPY db_manager/ ./db_manager/
 COPY utils/ ./utils/
 COPY queries/ ./queries/
-COPY api.py ./
+COPY main.py ./
 COPY celery_app.py ./
 COPY api/ ./api/
 
 # Expose the port the app runs on
 EXPOSE 4995
 
-# Default command to run the Flask API
-CMD ["uv", "run", "python", "api.py"]
+# Default command to run the FastAPI
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "4995"]

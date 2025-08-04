@@ -22,22 +22,8 @@ export interface CombinedItem {
   repo_ids: number[];      // Array of repo IDs (single for repos, multiple for orgs)
 }
 
-export interface DataMetadata {
-  total_repositories: number;
-  total_organizations: number;
-  total_items: number;
-  total_unique_repo_ids: number;  // New field from backend
-  last_updated: string | null;
-  dataset_info: {
-    description: string;
-    usage: string;
-    recommended_client_libraries: string[];
-  };
-}
-
 export interface DataResponse {
   repositories: Repository[];
   organizations: Organization[];
   all_items: CombinedItem[];
-  metadata: DataMetadata;
 } 

@@ -76,13 +76,6 @@ export default function DropdownMenu({
           </div>
         )}
       </div>
-      
-      {/* Footer with count */}
-      {data && !loading && !error && (
-        <div className="px-4 py-2 border-t border-[#404040] bg-[#252525] text-[14px] text-gray-400 font-inter" style={{ fontWeight: 400, fontStyle: 'normal' }}>
-          {data.metadata.total_items} items available
-        </div>
-      )}
     </div>
   );
 } 

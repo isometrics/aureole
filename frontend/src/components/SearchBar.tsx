@@ -67,7 +67,7 @@ export default function SearchBar({ isCollapsed = false, onExpand, onJobSubmit }
       }
     };
 
-    const timer = setTimeout(searchData, 800); // 800ms debounce
+            const timer = setTimeout(searchData, 300); // 300ms debounce
     return () => clearTimeout(timer);
   }, [searchValue]); // Only depend on searchValue, not data or loading
 

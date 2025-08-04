@@ -94,7 +94,7 @@ export default function Home() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-wide font-inter">
-            Aureole
+            8Lens
           </h1>
         </div>
         
