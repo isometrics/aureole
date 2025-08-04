@@ -1,27 +1,58 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 import ToggleCircle from "@/components/ToggleCircle";
 import Sidebar from "@/components/Sidebar";
+import ChatInterface from "@/components/ChatInterface";
 import TitleDropdown from "@/components/TitleDropdown";
 
-export default function Home() {
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  plotlyJson?: any;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export default function ChatPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState("8Knot");
+  const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
-  // Set initial title based on current path
+  // Initialize with a session ID on mount
   useEffect(() => {
-    if (pathname === '/chat') {
-      setCurrentTitle("Chat");
+    const savedSessions = localStorage.getItem('chatSessions');
+    if (savedSessions) {
+      try {
+        const sessions = JSON.parse(savedSessions);
+        if (sessions.length > 0) {
+          setCurrentSessionId(sessions[0].id);
+        } else {
+          // Create initial session
+          const newSessionId = `session-${Date.now()}`;
+          setCurrentSessionId(newSessionId);
+        }
+      } catch (error) {
+        // Create initial session on error
+        const newSessionId = `session-${Date.now()}`;
+        setCurrentSessionId(newSessionId);
+      }
     } else {
-      setCurrentTitle("8Knot");
+      // Create initial session
+      const newSessionId = `session-${Date.now()}`;
+      setCurrentSessionId(newSessionId);
     }
-  }, [pathname]);
+  }, []);
 
   const handleToggle = (isRotated: boolean) => {
     setIsCollapsed(isRotated);
@@ -35,8 +66,17 @@ export default function Home() {
     setIsLoading(loading);
   };
 
+  const handleSessionSelect = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+  };
+
+  const handleNewSession = () => {
+    const newSessionId = `session-${Date.now()}`;
+    setCurrentSessionId(newSessionId);
+    // The ChatInterface will handle creating the actual session
+  };
+
   const handleTitleChange = (title: string) => {
-    setCurrentTitle(title);
     if (title === "Chat") {
       router.push('/chat');
     } else {
@@ -87,21 +127,19 @@ export default function Home() {
               isCollapsed={isCollapsed} 
               onExpand={handleExpand} 
               onJobSubmit={handleJobSubmit}
-              currentTitle={currentTitle}
+              currentSessionId={currentSessionId}
+              onSessionSelect={handleSessionSelect}
+              onNewSession={handleNewSession}
+              currentTitle="Chat"
             />
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
           <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm overflow-hidden">
-            {/* 8Knot main content - empty for now */}
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4">8Knot</h2>
-                <p className="text-gray-400">Main content area for 8Knot features</p>
-              </div>
-            </div>
+            {/* Chat Interface */}
+            <ChatInterface sessionId={currentSessionId} />
           </div>
         </div>
       </div>
     </div>
   );
-}
+} 

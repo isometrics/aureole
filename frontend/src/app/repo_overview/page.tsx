@@ -1,27 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import Image from "next/image";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import ToggleCircle from "@/components/ToggleCircle";
 import Sidebar from "@/components/Sidebar";
 import TitleDropdown from "@/components/TitleDropdown";
 
-export default function Home() {
+export default function RepoOverviewPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTitle, setCurrentTitle] = useState("8Knot");
-
-  // Set initial title based on current path
-  useEffect(() => {
-    if (pathname === '/chat') {
-      setCurrentTitle("Chat");
-    } else {
-      setCurrentTitle("8Knot");
-    }
-  }, [pathname]);
 
   const handleToggle = (isRotated: boolean) => {
     setIsCollapsed(isRotated);
@@ -36,7 +24,6 @@ export default function Home() {
   };
 
   const handleTitleChange = (title: string) => {
-    setCurrentTitle(title);
     if (title === "Chat") {
       router.push('/chat');
     } else {
@@ -87,16 +74,57 @@ export default function Home() {
               isCollapsed={isCollapsed} 
               onExpand={handleExpand} 
               onJobSubmit={handleJobSubmit}
-              currentTitle={currentTitle}
+              currentTitle="8Knot"
             />
             <ToggleCircle onToggle={handleToggle} isCollapsed={isCollapsed} />
           </div>
           <div className="bg-[#1D1D1D] rounded-r-2xl flex-1 shadow-sm overflow-hidden">
-            {/* 8Knot main content - empty for now */}
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4">8Knot</h2>
-                <p className="text-gray-400">Main content area for 8Knot features</p>
+            {/* Repo Overview Content */}
+            <div className="p-8">
+              <h1 className="text-3xl font-bold text-white mb-6">Repository Overview</h1>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Stats Cards */}
+                <div className="bg-[#292929] rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Total Repositories</h3>
+                  <p className="text-3xl font-bold text-blue-400">1,247</p>
+                  <p className="text-gray-400 text-sm mt-2">+12% from last month</p>
+                </div>
+                
+                <div className="bg-[#292929] rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Active Contributors</h3>
+                  <p className="text-3xl font-bold text-green-400">892</p>
+                  <p className="text-gray-400 text-sm mt-2">+8% from last month</p>
+                </div>
+                
+                <div className="bg-[#292929] rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Total Commits</h3>
+                  <p className="text-3xl font-bold text-purple-400">45,231</p>
+                  <p className="text-gray-400 text-sm mt-2">+15% from last month</p>
+                </div>
+              </div>
+              
+              <div className="mt-8">
+                <h2 className="text-2xl font-bold text-white mb-4">Recent Activity</h2>
+                <div className="bg-[#292929] rounded-lg p-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                      <span className="text-white">New commit in react/react</span>
+                      <span className="text-gray-400 text-sm">2 hours ago</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                      <span className="text-white">Pull request opened in vuejs/vue</span>
+                      <span className="text-gray-400 text-sm">4 hours ago</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                      <span className="text-white">Issue reported in angular/angular</span>
+                      <span className="text-gray-400 text-sm">6 hours ago</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -104,4 +132,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
+} 
