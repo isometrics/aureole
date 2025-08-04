@@ -4,6 +4,15 @@
 ### Project Goal
 Provide intelligent, conversational assistance within the 8Knot platform. Our goal is to make complex data analysis more accessible and intuitive through natural language interactions.
 
+
+### Running
+
+**Backend**:
+Listens on localhost:4995. You can start it up by doing `cd backend` and then `docker compose up --build --scale celery=10`
+
+**Frontend**:
+The Frontend is a Next.js Application. You can start it up by doing `cd frontend` and then `npm install && npm run dev`
+
 ### FAQ
 - **Why is data collection so slow:** Most likely you're only using one celery worker. Increase the amount of workers by running
 `sudo docker compose --build --scale celery=<# of VIRTUAL CPU cores>`
