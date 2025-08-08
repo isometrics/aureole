@@ -270,8 +270,9 @@ async def get_commits_over_time_graph(request: RepoIdsRequest):
     try:
         from api.commits_over_time import commits_over_time_graph
         fig = commits_over_time_graph(request.repo_ids, "M")
-        data_html = fig.to_html(full_html=False, include_plotlyjs='cdn')
-        return GraphResponse(graph=data_html)
+        graph_data = fig.to_json()
+        print(graph_data)
+        return ""
     except Exception as e:
         logging.error(f"Error in get_commits_over_time_graph endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

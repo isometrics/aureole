@@ -6,12 +6,6 @@ from utils.job_utils import nodata_graph
 import time
 import cache_manager.cache_facade as cf
 
-def commits_over_time_tool(repolist, interval="M"):
-    graph = commits_over_time_graph(repolist, interval)
-    title = "Commits Over Time"
-    description = "Visualizes the number of commits added to the project.\n Commits are counted relative to a user-selected time window."
-    return graph, title, description
-
 def commits_over_time_graph(repolist, interval="M"):
     # wait for data to asynchronously download and become available.
     while not_cached := cf.get_uncached(func_name="commits", repolist=repolist):
